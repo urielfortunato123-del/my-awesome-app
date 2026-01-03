@@ -7,6 +7,7 @@ import {
   Settings
 } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { UpdateChecker } from "./UpdateChecker";
 
 interface HeaderProps {
   activeTab: string;
@@ -51,8 +52,9 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
           ))}
         </nav>
 
-        {/* Status */}
+        {/* Status & Update */}
         <div className="flex items-center gap-3">
+          <UpdateChecker />
           <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 border border-success/20 rounded-full">
             <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
             <span className="text-xs font-medium text-success">Sistema OK</span>
