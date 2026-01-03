@@ -20,8 +20,8 @@ import {
 import { toast } from "sonner";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
-export const APP_VERSION = "1.2.0";
-export const NEW_VERSION = "1.3.0";
+export const APP_VERSION = "1.3.0";
+export const NEW_VERSION = "1.4.0";
 
 interface ChangelogItem {
   type: "feature" | "fix" | "improvement" | "security";
@@ -29,12 +29,12 @@ interface ChangelogItem {
 }
 
 const changelog: ChangelogItem[] = [
-  { type: "feature", description: "Verificação automática de atualizações de drivers" },
-  { type: "feature", description: "Download e instalação de drivers com progresso" },
-  { type: "improvement", description: "Detecção aprimorada de hardware no Windows" },
-  { type: "improvement", description: "Interface mais responsiva e moderna" },
-  { type: "fix", description: "Correção na detecção de memória RAM" },
-  { type: "fix", description: "Correção de bugs na página de limpeza" },
+  { type: "feature", description: "Badge no ícone do app quando há atualização" },
+  { type: "feature", description: "Detecção universal de dispositivos (todos os fabricantes)" },
+  { type: "improvement", description: "Verificação automática de atualizações ao abrir o app" },
+  { type: "improvement", description: "Suporte a Samsung, Xiaomi, Motorola, Apple e mais" },
+  { type: "fix", description: "Correção na detecção de fabricante Android" },
+  { type: "fix", description: "Correção no botão de verificar atualizações" },
   { type: "security", description: "Melhorias de segurança e estabilidade" },
 ];
 
