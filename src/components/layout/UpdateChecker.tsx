@@ -82,24 +82,77 @@ export function UpdateChecker() {
   const [showDialog, setShowDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateComplete, setUpdateComplete] = useState(false);
+  const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    immediate: true, // Registra imediatamente ao carregar
     onRegisteredSW(swUrl, registration) {
       console.log("SW registrado:", swUrl);
-      // Verifica atualizações a cada 1 hora
+      
       if (registration) {
-        setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000);
+        // Verifica imediatamente ao registrar
+        registration.update().catch(console.error);
+        
+        // Verifica atualizações a cada 5 minutos (mais frequente para PWA)
+        const intervalId = setInterval(() => {
+          console.log("Verificando atualizações automaticamente...");
+          registration.update().catch(console.error);
+        }, 5 * 60 * 1000);
+
+        // Cleanup
+        return () => clearInterval(intervalId);
       }
     },
     onRegisterError(error) {
       console.error("Erro ao registrar SW:", error);
     },
   });
+
+  // Verifica atualizações ao abrir o app (focus/visibility)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Verifica se faz mais de 1 minuto desde a última verificação
+        const now = new Date();
+        if (!lastCheckTime || (now.getTime() - lastCheckTime.getTime()) > 60000) {
+          console.log("App visível - verificando atualizações...");
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+              registration.update().catch(console.error);
+            });
+          }).catch(console.error);
+          setLastCheckTime(now);
+        }
+      }
+    };
+
+    const handleFocus = () => {
+      const now = new Date();
+      if (!lastCheckTime || (now.getTime() - lastCheckTime.getTime()) > 60000) {
+        console.log("App em foco - verificando atualizações...");
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => {
+            registration.update().catch(console.error);
+          });
+        }).catch(console.error);
+        setLastCheckTime(now);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    // Verifica ao montar o componente
+    handleVisibilityChange();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [lastCheckTime]);
 
   // Quando detectar atualização disponível, mostra o dialog
   useEffect(() => {
@@ -118,8 +171,26 @@ export function UpdateChecker() {
     try {
       // Força verificação de atualização do Service Worker
       const registrations = await navigator.serviceWorker.getRegistrations();
+      
+      if (registrations.length === 0) {
+        toast.warning("Nenhum Service Worker registrado", {
+          description: "Tente recarregar a página"
+        });
+        setIsChecking(false);
+        return;
+      }
+
       for (const registration of registrations) {
         await registration.update();
+        
+        // Verifica se há um SW aguardando ativação
+        if (registration.waiting) {
+          setNeedRefresh(true);
+          setShowDialog(true);
+          toast.success("Nova versão encontrada!");
+          setIsChecking(false);
+          return;
+        }
       }
       
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -129,9 +200,13 @@ export function UpdateChecker() {
           description: `Versão atual: ${APP_VERSION}`
         });
       }
+      
+      setLastCheckTime(new Date());
     } catch (error) {
       console.error("Erro ao verificar atualizações:", error);
-      toast.error("Erro ao verificar atualizações");
+      toast.error("Erro ao verificar atualizações", {
+        description: "Verifique sua conexão com a internet"
+      });
     }
     
     setIsChecking(false);
@@ -143,6 +218,14 @@ export function UpdateChecker() {
     toast.info("Instalando atualização...");
     
     try {
+      // Envia mensagem para o SW aguardando para ativar imediatamente
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      }
+
       await updateServiceWorker(true);
       setUpdateComplete(true);
       setNeedRefresh(false);
@@ -157,7 +240,9 @@ export function UpdateChecker() {
       }, 1500);
     } catch (error) {
       console.error("Erro ao atualizar:", error);
-      toast.error("Erro ao instalar atualização");
+      toast.error("Erro ao instalar atualização", {
+        description: "Tente recarregar manualmente"
+      });
       setIsUpdating(false);
     }
   };

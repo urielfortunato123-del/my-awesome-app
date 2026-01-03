@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt", // Alterado para prompt para controle manual
       includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "Essencial — Sistema em Ordem",
@@ -47,6 +47,11 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Ativa skipWaiting via mensagem do cliente
+        skipWaiting: false,
+        clientsClaim: true,
+        // Configuração para atualização mais agressiva
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
@@ -60,6 +65,9 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
+      },
+      devOptions: {
+        enabled: true, // Habilita SW em desenvolvimento para testes
       },
     }),
   ].filter(Boolean),
