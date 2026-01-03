@@ -154,6 +154,29 @@ export function UpdateChecker() {
     };
   }, [lastCheckTime]);
 
+  // Gerencia o badge do ícone do app
+  useEffect(() => {
+    const setBadge = async () => {
+      if ('setAppBadge' in navigator) {
+        try {
+          if (needRefresh) {
+            // Mostra badge com número 1 indicando atualização
+            await (navigator as any).setAppBadge(1);
+            console.log("Badge de atualização exibido");
+          } else {
+            // Remove o badge quando não há atualização
+            await (navigator as any).clearAppBadge();
+            console.log("Badge removido");
+          }
+        } catch (error) {
+          console.error("Erro ao gerenciar badge:", error);
+        }
+      }
+    };
+
+    setBadge();
+  }, [needRefresh]);
+
   // Quando detectar atualização disponível, mostra o dialog
   useEffect(() => {
     if (needRefresh) {
