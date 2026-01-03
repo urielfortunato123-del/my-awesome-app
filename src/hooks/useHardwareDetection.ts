@@ -26,85 +26,244 @@ interface HardwareInfo {
   screenType: string;
 }
 
-// Database de fabricantes conhecidos
+// Database expandido de fabricantes - cobre todos os dispositivos conhecidos
 const manufacturerDatabase: Record<string, string> = {
-  'sm-': 'Samsung',
-  'gt-': 'Samsung',
-  'samsung': 'Samsung',
-  'galaxy': 'Samsung',
-  'pixel': 'Google',
-  'nexus': 'Google',
-  'redmi': 'Xiaomi',
-  'mi ': 'Xiaomi',
-  'poco': 'Xiaomi/POCO',
-  'oneplus': 'OnePlus',
-  'oppo': 'OPPO',
-  'realme': 'Realme',
-  'vivo': 'Vivo',
-  'huawei': 'Huawei',
-  'honor': 'Honor',
-  'motorola': 'Motorola',
-  'moto': 'Motorola',
-  'lg-': 'LG',
-  'lg ': 'LG',
-  'sony': 'Sony',
-  'xperia': 'Sony',
-  'asus': 'ASUS',
-  'zenfone': 'ASUS',
-  'rog': 'ASUS ROG',
-  'nokia': 'Nokia',
-  'htc': 'HTC',
-  'lenovo': 'Lenovo',
-  'tcl': 'TCL',
-  'zte': 'ZTE',
-  'infinix': 'Infinix',
-  'tecno': 'Tecno',
-  'iphone': 'Apple',
-  'ipad': 'Apple',
-  'macbook': 'Apple',
-  'imac': 'Apple',
-  'mac': 'Apple',
+  // Samsung (modelos completos)
+  'sm-s9': 'Samsung', 'sm-s8': 'Samsung', 'sm-s7': 'Samsung',
+  'sm-g9': 'Samsung', 'sm-g8': 'Samsung', 'sm-g7': 'Samsung',
+  'sm-a': 'Samsung', 'sm-m': 'Samsung', 'sm-f': 'Samsung', 'sm-n': 'Samsung',
+  'sm-t': 'Samsung', 'sm-x': 'Samsung', 'sm-p': 'Samsung',
+  'gt-': 'Samsung', 'sch-': 'Samsung', 'sgh-': 'Samsung', 'sph-': 'Samsung',
+  'samsung': 'Samsung', 'galaxy': 'Samsung',
+  
+  // Google
+  'pixel': 'Google', 'nexus': 'Google',
+  
+  // Xiaomi / Redmi / POCO
+  'redmi': 'Xiaomi', 'xiaomi': 'Xiaomi', 'mi ': 'Xiaomi', 'miui': 'Xiaomi',
+  'poco': 'POCO', 'pocophone': 'POCO',
+  '2201': 'Xiaomi', '2203': 'Xiaomi', '2206': 'Xiaomi', '2210': 'Xiaomi',
+  '2211': 'Xiaomi', '2304': 'Xiaomi', '2311': 'Xiaomi', '2312': 'Xiaomi',
+  '21': 'Xiaomi', '22': 'Xiaomi', '23': 'Xiaomi', '24': 'Xiaomi',
+  'm2': 'Xiaomi',
+  
+  // OnePlus
+  'oneplus': 'OnePlus', 'one plus': 'OnePlus',
+  'kb2': 'OnePlus', 'le2': 'OnePlus', 'ne2': 'OnePlus', 'cph23': 'OnePlus',
+  'in2': 'OnePlus', 'gm1': 'OnePlus', 'hd1': 'OnePlus',
+  
+  // OPPO
+  'oppo': 'OPPO', 'cph': 'OPPO', 'pch': 'OPPO', 'pbm': 'OPPO',
+  'pam': 'OPPO', 'pem': 'OPPO', 'pfm': 'OPPO', 'pgm': 'OPPO',
+  'find x': 'OPPO', 'reno': 'OPPO',
+  
+  // Realme
+  'realme': 'Realme', 'rmx': 'Realme',
+  
+  // Vivo
+  'vivo': 'Vivo', 'v19': 'Vivo', 'v20': 'Vivo', 'v21': 'Vivo', 'v23': 'Vivo',
+  'y': 'Vivo', 'x50': 'Vivo', 'x60': 'Vivo', 'x70': 'Vivo', 'x80': 'Vivo',
+  'iqoo': 'Vivo iQOO',
+  
+  // Huawei
+  'huawei': 'Huawei', 'hw-': 'Huawei', 'hma-': 'Huawei', 'els-': 'Huawei',
+  'ana-': 'Huawei', 'nop-': 'Huawei', 'bla-': 'Huawei', 'clt-': 'Huawei',
+  'p30': 'Huawei', 'p40': 'Huawei', 'p50': 'Huawei', 'mate': 'Huawei',
+  
+  // Honor
+  'honor': 'Honor', 'pgt-': 'Honor', 'nth-': 'Honor', 'any-': 'Honor',
+  
+  // Motorola
+  'motorola': 'Motorola', 'moto': 'Motorola', 'xt': 'Motorola',
+  'razr': 'Motorola', 'edge': 'Motorola',
+  
+  // LG
+  'lg-': 'LG', 'lg ': 'LG', 'lm-': 'LG', 'lgl': 'LG',
+  
+  // Sony
+  'sony': 'Sony', 'xperia': 'Sony', 'xq-': 'Sony', 'so-': 'Sony',
+  
+  // ASUS
+  'asus': 'ASUS', 'zenfone': 'ASUS', 'rog phone': 'ASUS ROG',
+  'asus_': 'ASUS', 'ai2': 'ASUS',
+  
+  // Nokia
+  'nokia': 'Nokia', 'ta-': 'Nokia',
+  
+  // HTC
+  'htc': 'HTC', 'desire': 'HTC', 'htc_': 'HTC',
+  
+  // Lenovo
+  'lenovo': 'Lenovo', 'tab': 'Lenovo', 'tb-': 'Lenovo', 'yt3-': 'Lenovo',
+  'legion': 'Lenovo Legion',
+  
+  // ZTE / Nubia
+  'zte': 'ZTE', 'nubia': 'ZTE Nubia', 'nx': 'ZTE Nubia', 'zte blade': 'ZTE',
+  
+  // Alcatel / TCL
+  'tcl': 'TCL', 'alcatel': 'Alcatel', '60': 'TCL',
+  
+  // Infinix / Tecno / itel (Transsion)
+  'infinix': 'Infinix', 'tecno': 'Tecno', 'itel': 'itel',
+  'hot': 'Infinix', 'spark': 'Tecno', 'camon': 'Tecno', 'phantom': 'Tecno',
+  
+  // Nothing
+  'nothing': 'Nothing', 'a063': 'Nothing',
+  
+  // Black Shark (gaming)
+  'black shark': 'Black Shark', 'shark': 'Black Shark',
+  
+  // Meizu
+  'meizu': 'Meizu', 'm6': 'Meizu', 'm8': 'Meizu',
+  
+  // Apple
+  'iphone': 'Apple', 'ipad': 'Apple', 'ipod': 'Apple',
+  'macbook': 'Apple', 'imac': 'Apple', 'mac pro': 'Apple', 'mac mini': 'Apple',
+  'macintosh': 'Apple', 'mac': 'Apple',
+  
+  // Microsoft
+  'surface': 'Microsoft', 'xbox': 'Microsoft',
+  
+  // Desktop/Laptop fabricantes
+  'dell': 'Dell', 'inspiron': 'Dell', 'latitude': 'Dell', 'xps': 'Dell', 'alienware': 'Dell Alienware',
+  'hp': 'HP', 'pavilion': 'HP', 'envy': 'HP', 'elitebook': 'HP', 'probook': 'HP', 'omen': 'HP Omen',
+  'acer': 'Acer', 'aspire': 'Acer', 'nitro': 'Acer', 'predator': 'Acer Predator', 'swift': 'Acer',
+  'thinkpad': 'Lenovo ThinkPad', 'ideapad': 'Lenovo IdeaPad', 'yoga': 'Lenovo Yoga',
+  'vaio': 'Sony VAIO',
+  'toshiba': 'Toshiba', 'dynabook': 'Dynabook',
+  'msi': 'MSI', 'razer': 'Razer', 'blade': 'Razer',
+  'gigabyte': 'GIGABYTE', 'aorus': 'GIGABYTE AORUS',
+  'huawei matebook': 'Huawei',
+  'samsung galaxy book': 'Samsung',
+  'chromebook': 'Chromebook',
 };
 
-// Detectar fabricante pelo modelo
-function detectManufacturer(model: string, os: string): string {
+// Prefixos de código de modelo por fabricante
+const modelPrefixes: Record<string, string> = {
+  'SM': 'Samsung', 'GT': 'Samsung', 'SCH': 'Samsung', 'SGH': 'Samsung', 'SPH': 'Samsung',
+  'LM': 'LG', 'LGL': 'LG', 'VS': 'LG',
+  'XT': 'Motorola', 'MOTO': 'Motorola',
+  'RMX': 'Realme',
+  'CPH': 'OPPO', 'PCH': 'OPPO', 'PBM': 'OPPO',
+  'V': 'Vivo', 'PD': 'Vivo',
+  'M2': 'Xiaomi', 'MI': 'Xiaomi',
+  'IN': 'OnePlus', 'NE': 'OnePlus', 'LE': 'OnePlus', 'KB': 'OnePlus',
+  'TA': 'Nokia',
+  'XQ': 'Sony', 'SO': 'Sony',
+  'HMA': 'Huawei', 'ELS': 'Huawei', 'ANA': 'Huawei', 'CLT': 'Huawei', 'VOG': 'Huawei',
+  'PGT': 'Honor', 'NTH': 'Honor', 'ANY': 'Honor',
+  'AI': 'ASUS', 'ZS': 'ASUS',
+  'NX': 'ZTE Nubia',
+  'INFINIX': 'Infinix', 'TECNO': 'Tecno',
+  'A0': 'Nothing',
+  'PIXEL': 'Google',
+};
+
+// Detectar fabricante pelo modelo - sistema universal
+function detectManufacturer(model: string, os: string, userAgent: string = ''): string {
   const modelLower = model.toLowerCase();
+  const uaLower = userAgent.toLowerCase();
   
-  // Apple devices
+  // Apple devices - detectar pelo OS primeiro
   if (os === 'iOS' || os === 'iPadOS' || os === 'macOS') {
     return 'Apple';
   }
   
-  // Buscar no database
-  for (const [key, manufacturer] of Object.entries(manufacturerDatabase)) {
-    if (modelLower.includes(key)) {
+  // 1. Buscar correspondência direta no database (mais específico primeiro)
+  // Ordenar por comprimento da chave (mais longo primeiro para match mais específico)
+  const sortedKeys = Object.keys(manufacturerDatabase).sort((a, b) => b.length - a.length);
+  
+  for (const key of sortedKeys) {
+    if (modelLower.includes(key) || uaLower.includes(key)) {
+      return manufacturerDatabase[key];
+    }
+  }
+  
+  // 2. Verificar prefixos de código de modelo
+  const modelUpper = model.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  
+  for (const [prefix, manufacturer] of Object.entries(modelPrefixes)) {
+    if (modelUpper.startsWith(prefix)) {
       return manufacturer;
     }
   }
   
-  // Tentar extrair do início do modelo (comum em Android)
-  const firstWord = model.split(/[\s-_]/)[0];
-  if (firstWord && firstWord.length > 2) {
-    // Verificar se parece um código de fabricante
-    const knownPrefixes: Record<string, string> = {
-      'SM': 'Samsung',
-      'GT': 'Samsung',
-      'LM': 'LG',
-      'XT': 'Motorola',
-      'RMX': 'Realme',
-      'CPH': 'OPPO',
-      'V': 'Vivo',
-      'M': 'Xiaomi',
-      'IN': 'Micromax',
-    };
-    
-    const prefix = firstWord.substring(0, 2).toUpperCase();
-    if (knownPrefixes[prefix]) {
-      return knownPrefixes[prefix];
+  // 3. Tentar extrair do User-Agent diretamente para Android
+  if (os === 'Android' || /android/i.test(userAgent)) {
+    // Padrão comum: "Build/XXXX" precedido pelo modelo
+    const buildMatch = userAgent.match(/;\s*([^;)]+)\s*Build/i);
+    if (buildMatch) {
+      const extractedModel = buildMatch[1].trim().toLowerCase();
+      
+      for (const key of sortedKeys) {
+        if (extractedModel.includes(key)) {
+          return manufacturerDatabase[key];
+        }
+      }
     }
   }
   
-  return 'Fabricante Desconhecido';
+  // 4. Análise heurística baseada em padrões comuns
+  // Samsung: SM-XXXX, GT-XXXX
+  if (/^sm-/i.test(model) || /^gt-/i.test(model)) return 'Samsung';
+  
+  // Xiaomi: geralmente começa com números como 2201, 2203, etc
+  if (/^2[0-4]\d{2}/i.test(model)) return 'Xiaomi';
+  
+  // Realme: RMX
+  if (/^rmx/i.test(model)) return 'Realme';
+  
+  // OPPO: CPH, PCH
+  if (/^cph|^pch/i.test(model)) return 'OPPO';
+  
+  // Motorola: XT, moto
+  if (/^xt|moto/i.test(model)) return 'Motorola';
+  
+  // 5. Detectar por WebGL renderer (GPUs específicas de fabricantes)
+  const webGLRenderer = getWebGLRendererForManufacturer();
+  if (webGLRenderer) {
+    if (/adreno/i.test(webGLRenderer)) {
+      // Adreno é usado por muitos, mas ajuda a confirmar Android
+      if (/mali/i.test(webGLRenderer)) return 'Samsung'; // Samsung usa Mali frequentemente
+    }
+    if (/apple/i.test(webGLRenderer)) return 'Apple';
+    if (/intel/i.test(webGLRenderer) || /nvidia/i.test(webGLRenderer) || /amd|radeon/i.test(webGLRenderer)) {
+      // Desktop - tentar identificar pelo User-Agent
+      if (/dell/i.test(uaLower)) return 'Dell';
+      if (/hp|hewlett/i.test(uaLower)) return 'HP';
+      if (/lenovo|thinkpad/i.test(uaLower)) return 'Lenovo';
+      if (/asus/i.test(uaLower)) return 'ASUS';
+      if (/acer/i.test(uaLower)) return 'Acer';
+      if (/msi/i.test(uaLower)) return 'MSI';
+    }
+  }
+  
+  // 6. Para desktops/notebooks, tentar detectar por características
+  if (!(/android|iphone|ipad|mobile/i.test(userAgent))) {
+    if (/windows/i.test(userAgent)) {
+      return 'PC (Windows)';
+    }
+    if (/linux/i.test(userAgent) && !/android/i.test(userAgent)) {
+      return 'PC (Linux)';
+    }
+  }
+  
+  return 'Dispositivo';
+}
+
+// Helper para obter WebGL renderer para detecção de fabricante
+function getWebGLRendererForManufacturer(): string {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (gl) {
+      const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        return (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
+      }
+    }
+  } catch (e) {}
+  return '';
 }
 
 // Parse user agent para extrair informações detalhadas
@@ -174,30 +333,45 @@ function parseUserAgent(ua: string): {
       kernelVersion = "Linux (versão não disponível)";
     }
     
-    // Detectar modelo do dispositivo Android - múltiplos padrões
+    // Detectar modelo do dispositivo Android - sistema robusto
     let model = "";
     
-    // Padrão 1: "Model Build/..."
-    const buildMatch = ua.match(/;\s*([^;)]+)\s*build\//i);
-    if (buildMatch) {
-      model = buildMatch[1].trim();
-    }
+    // Múltiplos padrões para extrair modelo
+    const patterns = [
+      /;\s*([^;)]+)\s*Build\//i,                    // Padrão principal: "Model Build/"
+      /;\s*([^;)]+)\s*\)\s*AppleWebKit/i,           // Antes de AppleWebKit
+      /Android\s+[\d.]+;\s*([^;)]+?)(?:\)|;|Build)/i, // Após versão Android
+      /;\s*([A-Z]{2,3}[0-9]{2,}[A-Za-z0-9-]*)/i,    // Códigos como SM-G960, RMX3085
+      /;\s*((?:SM|GT|LM|XT|RMX|CPH|V|M2|IN|TA|XQ|HMA|PGT)-?[A-Z0-9]+)/i, // Códigos específicos
+    ];
     
-    // Padrão 2: Após a versão do Android
-    if (!model) {
-      const altMatch = ua.match(/android\s+[\d.]+;\s*([^;)]+)/i);
-      if (altMatch) {
-        model = altMatch[1].trim();
+    for (const pattern of patterns) {
+      const match = ua.match(pattern);
+      if (match && match[1]) {
+        model = match[1].trim();
+        // Validar se parece um modelo válido (não é genérico demais)
+        if (model.length > 2 && !/^(linux|android|mobile|en-|wv)/i.test(model)) {
+          break;
+        }
+        model = "";
       }
     }
     
     // Limpar modelo
     if (model) {
       model = model
-        .replace(/build\/.*/i, '')
+        .replace(/Build\/.*/i, '')
+        .replace(/MIUI\/.*/i, '')
         .replace(/\s+/g, ' ')
+        .replace(/^\s*;\s*/, '')
         .trim();
-      deviceModel = model;
+      
+      // Formatar códigos de modelo para legibilidade
+      if (/^sm-/i.test(model)) {
+        deviceModel = model.toUpperCase();
+      } else {
+        deviceModel = model;
+      }
     }
     
     deviceType = /mobile/i.test(ua) ? "Smartphone Android" : "Tablet Android";
@@ -395,7 +569,7 @@ export function useHardwareDetection() {
       try {
         const ua = navigator.userAgent;
         const parsed = parseUserAgent(ua);
-        const manufacturer = detectManufacturer(parsed.deviceModel, parsed.os);
+        const manufacturer = detectManufacturer(parsed.deviceModel, parsed.os, ua);
         const webGLRenderer = getWebGLRenderer();
         const cpuArchitecture = getCPUArchitecture();
 
