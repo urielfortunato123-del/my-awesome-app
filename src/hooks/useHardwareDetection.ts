@@ -150,12 +150,24 @@ function parseUserAgent(ua: string): {
   // Detectar OS e versão
   if (/android/i.test(ua)) {
     os = "Android";
-    const match = ua.match(/android\s+(\d+\.?\d*\.?\d*)/i);
-    osVersion = match ? match[1] : "";
+    // Múltiplos padrões para detectar versão do Android (incluindo Android 16+)
+    let versionMatch = ua.match(/android\s+(\d+(?:\.\d+)*)/i);
+    if (!versionMatch) {
+      // Padrão alternativo: "Android/16" ou similar
+      versionMatch = ua.match(/android[\/\s]+(\d+(?:\.\d+)*)/i);
+    }
+    if (!versionMatch) {
+      // Tentar encontrar versão após "Linux; Android"
+      versionMatch = ua.match(/linux;\s*android\s+(\d+(?:\.\d+)*)/i);
+    }
+    osVersion = versionMatch ? versionMatch[1] : "";
     isMobile = true;
     
-    // Extrair versão do kernel Linux
-    const kernelMatch = ua.match(/linux;\s*[^;]*?(\d+\.\d+\.\d+[^\s;)]*)/i);
+    // Extrair versão do kernel Linux - múltiplos padrões
+    let kernelMatch = ua.match(/linux;\s*[^;]*?(\d+\.\d+\.\d+[^\s;)]*)/i);
+    if (!kernelMatch) {
+      kernelMatch = ua.match(/linux\s*(\d+\.\d+[^\s;)]*)/i);
+    }
     if (kernelMatch) {
       kernelVersion = `Linux ${kernelMatch[1]}`;
     } else {
