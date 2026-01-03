@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Sparkles, X, Send, Bot, User, Minimize2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ interface Message {
   content: string;
 }
 
-export function VirtualAssistant() {
+export const VirtualAssistant = forwardRef<HTMLDivElement, object>(function VirtualAssistant(_, ref) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState("");
@@ -156,4 +156,4 @@ export function VirtualAssistant() {
       </div>
     </div>
   );
-}
+});
