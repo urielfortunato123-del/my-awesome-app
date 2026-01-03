@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Download, 
   RefreshCw, 
@@ -9,7 +9,6 @@ import {
   Zap,
   Shield,
   Loader2,
-  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useRegisterSW } from "virtual:pwa-register/react";
 
 const APP_VERSION = "1.2.0";
 const NEW_VERSION = "1.3.0";
@@ -79,30 +79,59 @@ const getLabelColor = (type: ChangelogItem["type"]) => {
 
 export function UpdateChecker() {
   const [isChecking, setIsChecking] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateComplete, setUpdateComplete] = useState(false);
+
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisteredSW(swUrl, registration) {
+      console.log("SW registrado:", swUrl);
+      // Verifica atualizações a cada 1 hora
+      if (registration) {
+        setInterval(() => {
+          registration.update();
+        }, 60 * 60 * 1000);
+      }
+    },
+    onRegisterError(error) {
+      console.error("Erro ao registrar SW:", error);
+    },
+  });
+
+  // Quando detectar atualização disponível, mostra o dialog
+  useEffect(() => {
+    if (needRefresh) {
+      setShowDialog(true);
+      toast.success("Nova versão disponível!", {
+        description: `Versão ${NEW_VERSION} está pronta para instalar`
+      });
+    }
+  }, [needRefresh]);
 
   const handleCheckUpdate = async () => {
     setIsChecking(true);
     toast.info("Verificando atualizações...");
     
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Simula encontrar uma atualização
-    const hasUpdate = Math.random() > 0.3; // 70% chance de ter atualização
-    
-    if (hasUpdate) {
-      setUpdateAvailable(true);
-      setShowDialog(true);
-      toast.success("Nova versão disponível!", {
-        description: `Versão ${NEW_VERSION} está pronta para instalar`
-      });
-    } else {
-      toast.success("Você está usando a versão mais recente!", {
-        description: `Versão atual: ${APP_VERSION}`
-      });
+    try {
+      // Força verificação de atualização do Service Worker
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.update();
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      if (!needRefresh) {
+        toast.success("Você está usando a versão mais recente!", {
+          description: `Versão atual: ${APP_VERSION}`
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao verificar atualizações:", error);
+      toast.error("Erro ao verificar atualizações");
     }
     
     setIsChecking(false);
@@ -111,24 +140,26 @@ export function UpdateChecker() {
   const handleUpdate = async () => {
     setIsUpdating(true);
     
-    toast.info("Baixando atualização...");
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
     toast.info("Instalando atualização...");
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    setIsUpdating(false);
-    setUpdateComplete(true);
-    setUpdateAvailable(false);
-    
-    toast.success("Atualização concluída!", {
-      description: "O aplicativo será recarregado"
-    });
-    
-    // Recarrega após 2 segundos
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    try {
+      await updateServiceWorker(true);
+      setUpdateComplete(true);
+      setNeedRefresh(false);
+      
+      toast.success("Atualização concluída!", {
+        description: "O aplicativo será recarregado"
+      });
+      
+      // Recarrega após 1.5 segundos
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Erro ao atualizar:", error);
+      toast.error("Erro ao instalar atualização");
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -142,13 +173,13 @@ export function UpdateChecker() {
       >
         {isChecking ? (
           <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin" />
-        ) : updateAvailable ? (
+        ) : needRefresh ? (
           <Download className="h-3 w-3 md:h-4 md:w-4 text-info" />
         ) : (
           <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
         )}
         <span className="hidden md:inline">
-          {isChecking ? "Verificando..." : updateAvailable ? "Atualizar" : "Verificar Atualizações"}
+          {isChecking ? "Verificando..." : needRefresh ? "Atualizar" : "Verificar Atualizações"}
         </span>
         <span className="md:hidden">
           {isChecking ? "..." : "Atualizar"}
