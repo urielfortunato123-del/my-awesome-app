@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useHardwareDetection } from "@/hooks/useHardwareDetection";
+import { useActivityLog } from "@/contexts/ActivityLogContext";
 
 interface CleanupItem {
   id: string;
@@ -31,6 +32,7 @@ interface CleanupItem {
 
 export function CleanupPage() {
   const { hardware } = useHardwareDetection();
+  const { addLog } = useActivityLog();
   const [isScanning, setIsScanning] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -173,6 +175,17 @@ export function CleanupPage() {
         item.checked ? { ...item, size: "0 B", sizeBytes: 0 } : item
       ));
       setTotalCleanable(0);
+
+      // Registrar no log de atividades
+      const cleanedBytes = selectedItems.reduce((sum, i) => sum + i.sizeBytes, 0);
+      addLog({
+        task: "Limpeza do Sistema",
+        type: "cleanup",
+        category: "Limpeza",
+        status: "success",
+        details: `${formatBytes(cleanedBytes)} liberados`,
+        dataSize: cleanedBytes,
+      });
 
       toast.success("Limpeza concluída!", {
         description: "Cache e dados temporários foram removidos"
