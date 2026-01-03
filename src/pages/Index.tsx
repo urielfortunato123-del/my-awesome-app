@@ -49,12 +49,17 @@ const Index = () => {
 
   return (
     <BackupProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <InitialBackupModal />
         <Header activeTab={activeTab} onTabChange={handleNavigate} />
-        <main>
+        <main className="flex-1">
           {renderContent()}
         </main>
+        <footer className="py-4 text-center border-t border-border bg-sidebar">
+          <p className="text-xs text-muted-foreground">
+            Desenvolvido por <span className="text-primary font-medium">Uriel da Fonseca Fortunato</span>
+          </p>
+        </footer>
         <VirtualAssistant />
       </div>
     </BackupProvider>
