@@ -7,7 +7,7 @@ import {
   Settings
 } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { UpdateChecker } from "./UpdateChecker";
+import { UpdateChecker, APP_VERSION } from "./UpdateChecker";
 
 interface HeaderProps {
   activeTab: string;
@@ -27,12 +27,17 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
   return (
     <header className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50 shrink-0">
       <div className="flex items-center justify-between px-3 md:px-6 py-2 md:py-4">
-        {/* Logo */}
-        <img 
-          src={logo} 
-          alt="Essencial Logo" 
-          className="h-8 md:h-12 w-auto"
-        />
+        {/* Logo & Version */}
+        <div className="flex items-center gap-2">
+          <img 
+            src={logo} 
+            alt="Essencial Logo" 
+            className="h-8 md:h-12 w-auto"
+          />
+          <span className="text-[9px] md:text-xs text-muted-foreground font-medium px-1.5 py-0.5 bg-muted/50 rounded">
+            v{APP_VERSION}
+          </span>
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
