@@ -1,57 +1,34 @@
-import { RefreshCw, HardDrive, Zap, Wifi, Shield, AlertTriangle, CheckCircle, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { 
+  RefreshCw, 
+  HardDrive, 
+  Zap, 
+  Shield, 
+  Trash2,
+  CheckCircle, 
+  X,
+  Play,
+  Pause,
+  Clock
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 interface Task {
   id: string;
   name: string;
-  lastRun: string;
-  duration: string;
-  status: "success" | "warning" | "pending";
+  description: string;
+  status: "pending" | "running" | "success" | "warning";
+  progress: number;
   icon: React.ElementType;
 }
 
-const tasks: Task[] = [
-  {
-    id: "1",
-    name: "Verificar se há atualizações",
-    lastRun: "02 de jan. de 2026",
-    duration: "40 segundos",
-    status: "warning",
-    icon: RefreshCw,
-  },
-  {
-    id: "2",
-    name: "Fazer varredura de hardware",
-    lastRun: "18 de dez. de 2025",
-    duration: "Não selecionado",
-    status: "pending",
-    icon: HardDrive,
-  },
-  {
-    id: "3",
-    name: "Melhorar desempenho",
-    lastRun: "02 de jan. de 2026",
-    duration: "4:41 minutos",
-    status: "success",
-    icon: Zap,
-  },
-  {
-    id: "4",
-    name: "Otimizar rede",
-    lastRun: "02 de jan. de 2026",
-    duration: "8 segundos",
-    status: "success",
-    icon: Wifi,
-  },
-  {
-    id: "5",
-    name: "Remover vírus",
-    lastRun: "N/A",
-    duration: "Não selecionado",
-    status: "pending",
-    icon: Shield,
-  },
+const initialTasks: Task[] = [
+  { id: "1", name: "Verificar atualizações", description: "Buscando novas versões", status: "pending", progress: 0, icon: RefreshCw },
+  { id: "2", name: "Analisar hardware", description: "Detectando componentes", status: "pending", progress: 0, icon: HardDrive },
+  { id: "3", name: "Otimizar desempenho", description: "Melhorando performance", status: "pending", progress: 0, icon: Zap },
+  { id: "4", name: "Verificar segurança", description: "Analisando proteções", status: "pending", progress: 0, icon: Shield },
+  { id: "5", name: "Limpar arquivos", description: "Removendo temporários", status: "pending", progress: 0, icon: Trash2 },
 ];
 
 interface ScanPageProps {
@@ -59,138 +36,198 @@ interface ScanPageProps {
 }
 
 export function ScanPage({ onClose }: ScanPageProps) {
+  const [tasks, setTasks] = useState(initialTasks);
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentTask, setCurrentTask] = useState(0);
+  const [overallProgress, setOverallProgress] = useState(0);
+
+  const startScan = () => {
+    setIsRunning(true);
+    setTasks(initialTasks);
+    setCurrentTask(0);
+    setOverallProgress(0);
+  };
+
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      setTasks(prev => {
+        const newTasks = [...prev];
+        
+        if (currentTask < newTasks.length) {
+          const task = newTasks[currentTask];
+          
+          if (task.status === "pending") {
+            task.status = "running";
+            task.progress = 0;
+          } else if (task.status === "running") {
+            task.progress += Math.random() * 15 + 5;
+            
+            if (task.progress >= 100) {
+              task.progress = 100;
+              task.status = "success";
+              setCurrentTask(c => c + 1);
+            }
+          }
+        }
+        
+        const totalProgress = newTasks.reduce((acc, t) => acc + t.progress, 0) / newTasks.length;
+        setOverallProgress(totalProgress);
+        
+        if (newTasks.every(t => t.status === "success")) {
+          setIsRunning(false);
+        }
+        
+        return newTasks;
+      });
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [isRunning, currentTask]);
+
+  const completedTasks = tasks.filter(t => t.status === "success").length;
+
   return (
-    <div className="container mx-auto px-6 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-medium text-foreground">
-          Executar varreduras e otimizações
-        </h2>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Fechar <X className="h-4 w-4 ml-2" />
-        </Button>
-      </div>
-
-      {/* Problem Alert */}
-      <div className="bg-card rounded-lg p-6 mb-8 border border-border">
-        <h3 className="text-xl font-light text-foreground mb-2">
-          Encontramos um problema
-        </h3>
-        <p className="text-muted-foreground">
-          Não foi possível verificar se há atualizações. Você pode selecionar{" "}
-          <span className="font-semibold text-foreground">O que aconteceu</span>{" "}
-          nas tarefas listadas abaixo para saber mais.
-        </p>
-
-        <div className="flex gap-3 mt-4">
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Reiniciar
-          </Button>
-          <Button variant="outline">
-            Voltar ao Início
+    <div className="min-h-[calc(100vh-80px)] p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-foreground">Varredura do Sistema</h2>
+            <p className="text-muted-foreground">Análise completa de performance e segurança</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="gap-2">
+            <X className="h-4 w-4" />
+            Fechar
           </Button>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Tasks Table */}
-        <div className="lg:col-span-2">
-          <h3 className="text-lg font-medium text-foreground mb-4">
-            Tarefas concluídas
-          </h3>
-          
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
-            {/* Table Header */}
-            <div className="grid grid-cols-[1fr,200px,150px] gap-4 px-6 py-3 border-b border-border text-sm font-medium text-muted-foreground">
-              <span>Tarefa</span>
-              <span>Tempo decorrido</span>
-              <span></span>
+        {/* Progress Overview */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                overallProgress >= 100 
+                  ? 'bg-success/20' 
+                  : isRunning 
+                    ? 'bg-primary/20' 
+                    : 'bg-muted'
+              }`}>
+                {overallProgress >= 100 ? (
+                  <CheckCircle className="h-8 w-8 text-success" />
+                ) : isRunning ? (
+                  <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+                ) : (
+                  <Play className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-foreground">
+                  {overallProgress >= 100 
+                    ? 'Varredura Concluída!' 
+                    : isRunning 
+                      ? 'Analisando Sistema...' 
+                      : 'Pronto para Iniciar'}
+                </h3>
+                <p className="text-muted-foreground">
+                  {completedTasks} de {tasks.length} tarefas concluídas
+                </p>
+              </div>
             </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-foreground">{Math.round(overallProgress)}%</p>
+              <p className="text-sm text-muted-foreground">Progresso</p>
+            </div>
+          </div>
+          <Progress value={overallProgress} className="h-3" />
+          
+          {!isRunning && overallProgress < 100 && (
+            <Button 
+              onClick={startScan}
+              className="mt-6 w-full gap-2 bg-gradient-to-r from-primary to-info hover:opacity-90 text-primary-foreground"
+            >
+              <Play className="h-5 w-5" />
+              Iniciar Varredura Completa
+            </Button>
+          )}
+        </div>
 
-            {/* Table Rows */}
+        {/* Tasks List */}
+        <div className="glass-card">
+          <div className="p-4 border-b border-border">
+            <h3 className="font-medium text-foreground">Tarefas de Análise</h3>
+          </div>
+          <div className="divide-y divide-border">
             {tasks.map((task) => (
-              <div
-                key={task.id}
-                className="grid grid-cols-[1fr,200px,150px] gap-4 px-6 py-4 border-b border-border last:border-0 items-center hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  {task.status === "warning" && (
-                    <AlertTriangle className="h-5 w-5 text-warning" />
-                  )}
-                  {task.status === "success" && (
-                    <CheckCircle className="h-5 w-5 text-success" />
-                  )}
-                  {task.status === "pending" && (
-                    <div className="h-5 w-5" />
-                  )}
-                  <div className="bg-muted p-2 rounded-full">
-                    <task.icon className="h-4 w-4 text-muted-foreground" />
+              <div key={task.id} className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      task.status === 'success' ? 'bg-success/20' :
+                      task.status === 'running' ? 'bg-primary/20' : 'bg-muted/50'
+                    }`}>
+                      {task.status === 'success' ? (
+                        <CheckCircle className="h-5 w-5 text-success" />
+                      ) : task.status === 'running' ? (
+                        <task.icon className="h-5 w-5 text-primary animate-pulse" />
+                      ) : (
+                        <task.icon className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div>
+                      <p className={`font-medium ${
+                        task.status === 'pending' ? 'text-muted-foreground' : 'text-foreground'
+                      }`}>
+                        {task.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className={`font-medium ${task.status === "pending" ? "text-muted-foreground" : "text-foreground"}`}>
-                      {task.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Última execução: {task.lastRun}
-                    </p>
+                  <div className="text-right">
+                    <span className={`text-sm font-medium ${
+                      task.status === 'success' ? 'text-success' :
+                      task.status === 'running' ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
+                      {task.status === 'success' ? 'Concluído' :
+                       task.status === 'running' ? `${Math.round(task.progress)}%` : 'Aguardando'}
+                    </span>
                   </div>
                 </div>
-                <span className="text-sm text-muted-foreground">{task.duration}</span>
-                {task.status === "warning" && (
-                  <Button variant="ghost" size="sm" className="text-primary">
-                    O que aconteceu
-                  </Button>
+                {(task.status === 'running' || task.status === 'success') && (
+                  <Progress value={task.progress} className="h-1.5 mt-2" />
                 )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Results Sidebar */}
-        <div>
-          <h3 className="text-lg font-medium text-foreground mb-4">
-            Resultados
-          </h3>
-          
-          <div className="space-y-4">
-            <div className="bg-card rounded-xl p-4 border border-border">
-              <div className="flex items-center gap-3">
-                <div className="bg-warning/10 p-2 rounded-full">
-                  <RefreshCw className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-foreground">3,30 GB</p>
-                  <p className="text-sm text-muted-foreground">Espaço na unidade recuperado</p>
-                </div>
+        {/* Results Summary */}
+        {overallProgress >= 100 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="glass-card p-6 text-center">
+              <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="h-6 w-6 text-success" />
               </div>
+              <p className="text-2xl font-bold text-foreground">0</p>
+              <p className="text-sm text-muted-foreground">Problemas encontrados</p>
             </div>
-            
-            <div className="bg-card rounded-xl p-4 border border-border">
-              <div className="flex items-center gap-3">
-                <div className="bg-warning/10 p-2 rounded-full">
-                  <AlertTriangle className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-foreground">0</p>
-                  <p className="text-sm text-muted-foreground">Atualizações de software falharam</p>
-                </div>
+            <div className="glass-card p-6 text-center">
+              <div className="w-12 h-12 rounded-xl bg-info/20 flex items-center justify-center mx-auto mb-3">
+                <Trash2 className="h-6 w-6 text-info" />
               </div>
+              <p className="text-2xl font-bold text-foreground">0 MB</p>
+              <p className="text-sm text-muted-foreground">Espaço liberado</p>
             </div>
-            
-            <div className="bg-card rounded-xl p-4 border border-border">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary/10 p-2 rounded-full">
-                  <Zap className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-foreground">488</p>
-                  <p className="text-sm text-muted-foreground">Arquivos otimizados</p>
-                </div>
+            <div className="glass-card p-6 text-center">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                <Clock className="h-6 w-6 text-primary" />
               </div>
+              <p className="text-2xl font-bold text-foreground">--</p>
+              <p className="text-sm text-muted-foreground">Tempo total</p>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

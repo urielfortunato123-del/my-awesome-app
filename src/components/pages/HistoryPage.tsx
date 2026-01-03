@@ -1,4 +1,16 @@
-import { RefreshCw, Trash2, Zap, Shield, Calendar, ChevronDown, Wifi } from "lucide-react";
+import { 
+  RefreshCw, 
+  Trash2, 
+  Zap, 
+  Shield, 
+  Calendar, 
+  ChevronDown, 
+  Wifi,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Filter
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -7,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 
 interface ActivityLog {
   id: string;
@@ -20,55 +31,81 @@ interface ActivityLog {
 }
 
 const activityLogs: ActivityLog[] = [
-  {
-    id: "1",
-    task: "Otimizar rede",
-    type: "Manual",
-    status: "success",
-    time: "8:15:27 PM",
-    duration: "8 segundos",
-    icon: Wifi,
-  },
-  {
-    id: "2",
-    task: "Melhorar desempenho",
-    type: "Manual",
-    status: "success",
-    time: "8:13:48 PM",
-    duration: "4:14 minutos",
-    icon: Zap,
-  },
-  {
-    id: "3",
-    task: "Atualizações de software",
-    type: "Manual",
-    status: "failed",
-    time: "8:09:59 PM",
-    duration: "40 segundos",
-    icon: RefreshCw,
-  },
+  { id: "1", task: "Varredura completa", type: "Manual", status: "success", time: "--:--", duration: "--", icon: Shield },
 ];
 
 export function HistoryPage() {
   return (
-    <div className="container mx-auto px-6 py-8">
-      {/* Summary Section */}
-      <section className="mb-10">
-        <h2 className="text-2xl font-light text-foreground mb-2">
-          Resumo de atividades do sistema
-        </h2>
-        <p className="text-muted-foreground mb-6">
-          Sua atividade do sistema é exibida abaixo. Use o filtro para visualizar os resultados durante períodos mais longos.
-        </p>
+    <div className="min-h-[calc(100vh-80px)] p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-foreground">Histórico de Atividades</h2>
+            <p className="text-muted-foreground">Acompanhe todas as ações realizadas no sistema</p>
+          </div>
+          <Button variant="outline" className="gap-2">
+            <Filter className="h-4 w-4" />
+            Filtros
+          </Button>
+        </div>
 
-        {/* Filter */}
-        <div className="mb-6">
-          <label className="text-sm font-medium text-foreground mb-2 block">
-            Filtrar por data
-          </label>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                <RefreshCw className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">0</p>
+                <p className="text-sm text-muted-foreground">Atualizações instaladas</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center">
+                <Trash2 className="h-6 w-6 text-secondary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">0 GB</p>
+                <p className="text-sm text-muted-foreground">Espaço recuperado</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-info/20 flex items-center justify-center">
+                <Zap className="h-6 w-6 text-info" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">0</p>
+                <p className="text-sm text-muted-foreground">Arquivos otimizados</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
+                <Shield className="h-6 w-6 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">0</p>
+                <p className="text-sm text-muted-foreground">Varreduras realizadas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-4">
           <Select defaultValue="90">
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Selecione o período" />
+            <SelectTrigger className="w-48 bg-card border-border">
+              <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="7">Últimos 7 dias</SelectItem>
@@ -76,155 +113,87 @@ export function HistoryPage() {
               <SelectItem value="90">Últimos 90 dias</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-accent/50 rounded-xl p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <RefreshCw className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">11</p>
-                <p className="text-sm text-muted-foreground">Atualizações de software instaladas</p>
-              </div>
-            </div>
-          </div>
           
-          <div className="bg-accent/50 rounded-xl p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Trash2 className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">5,57 GB</p>
-                <p className="text-sm text-muted-foreground">Espaço na unidade recuperado</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-accent/50 rounded-xl p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Zap className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">1473</p>
-                <p className="text-sm text-muted-foreground">Arquivos otimizados</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-muted/50 rounded-xl p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-muted p-3 rounded-full">
-                <Shield className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-lg font-medium text-muted-foreground">Não disponível em seu plano</p>
-                <a href="#" className="text-sm text-primary hover:underline">
-                  Obter proteção contra vírus e malware
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Activity Logs Section */}
-      <section>
-        <h2 className="text-2xl font-light text-foreground mb-2">
-          Logs de atividades recentes
-        </h2>
-        <p className="text-muted-foreground mb-6">
-          Selecione seu intervalo de datas e filtre para visualizar resultados para sua atividade recente.
-        </p>
-
-        {/* Filters */}
-        <div className="flex gap-4 mb-6">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
-              Filtrar por data
-            </label>
-            <Select defaultValue="today">
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="yesterday">Ontem</SelectItem>
-                <SelectItem value="week">Última semana</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
-              Filtrar por categoria
-            </label>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Mostrar tudo</SelectItem>
-                <SelectItem value="updates">Atualizações</SelectItem>
-                <SelectItem value="optimization">Otimização</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select defaultValue="all">
+            <SelectTrigger className="w-48 bg-card border-border">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              <SelectItem value="scan">Varreduras</SelectItem>
+              <SelectItem value="cleanup">Limpeza</SelectItem>
+              <SelectItem value="update">Atualizações</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Activity Table */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          {/* Date Header */}
-          <div className="flex items-center gap-3 px-6 py-4 bg-muted/30 border-b border-border">
+        <div className="glass-card overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center gap-3">
             <Calendar className="h-5 w-5 text-primary" />
-            <span className="font-medium text-foreground">2 de janeiro de 2026 - sexta-feira</span>
+            <span className="font-medium text-foreground">Atividades Recentes</span>
           </div>
 
           {/* Table Header */}
-          <div className="grid grid-cols-[1fr,120px,120px,150px,150px,100px] gap-4 px-6 py-3 border-b border-border text-sm font-medium text-muted-foreground">
-            <span></span>
+          <div className="grid grid-cols-[1fr,120px,120px,150px,150px,100px] gap-4 px-6 py-3 border-b border-border text-sm font-medium text-muted-foreground bg-muted/20">
+            <span>Tarefa</span>
             <span>Tipo</span>
             <span>Status</span>
-            <span>Tempo</span>
-            <span>Tempo decorrido</span>
+            <span>Hora</span>
+            <span>Duração</span>
             <span></span>
           </div>
 
-          {/* Table Rows */}
-          {activityLogs.map((log) => (
-            <div
-              key={log.id}
-              className="grid grid-cols-[1fr,120px,120px,150px,150px,100px] gap-4 px-6 py-4 border-b border-border last:border-0 items-center hover:bg-muted/30 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <log.icon className="h-5 w-5 text-primary" />
-                <span className="font-medium text-foreground">{log.task}</span>
+          {/* Empty State or Logs */}
+          {activityLogs.length === 1 && activityLogs[0].time === "--:--" ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                <Clock className="h-8 w-8 text-muted-foreground" />
               </div>
-              <span className="text-sm text-muted-foreground">{log.type}</span>
-              <Badge
-                variant={log.status === "success" ? "default" : "destructive"}
-                className={
-                  log.status === "success"
-                    ? "bg-success/10 text-success hover:bg-success/20"
-                    : "bg-warning/10 text-warning hover:bg-warning/20"
-                }
-              >
-                {log.status === "success" ? "Concluído" : "Falha"}
-              </Badge>
-              <span className="text-sm text-muted-foreground">{log.time}</span>
-              <span className="text-sm text-muted-foreground">{log.duration}</span>
-              <Button variant="ghost" size="sm" className="text-primary">
-                Detalhes
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </Button>
+              <h3 className="text-lg font-medium text-foreground mb-2">Nenhuma atividade ainda</h3>
+              <p className="text-muted-foreground">
+                Execute uma varredura ou limpeza para ver o histórico aqui.
+              </p>
             </div>
-          ))}
+          ) : (
+            <div className="divide-y divide-border">
+              {activityLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="grid grid-cols-[1fr,120px,120px,150px,150px,100px] gap-4 px-6 py-4 items-center hover:bg-muted/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+                      <log.icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <span className="font-medium text-foreground">{log.task}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{log.type}</span>
+                  <div className="flex items-center gap-2">
+                    {log.status === "success" ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-success" />
+                        <span className="text-sm text-success">Sucesso</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4 text-destructive" />
+                        <span className="text-sm text-destructive">Falha</span>
+                      </>
+                    )}
+                  </div>
+                  <span className="text-sm text-muted-foreground">{log.time}</span>
+                  <span className="text-sm text-muted-foreground">{log.duration}</span>
+                  <Button variant="ghost" size="sm" className="text-primary gap-1">
+                    Detalhes
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </section>
+      </div>
     </div>
   );
 }
