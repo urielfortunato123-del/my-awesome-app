@@ -2,105 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 210 50% 15%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 210 50% 15%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 50% 15%;
-
-    --primary: 207 90% 54%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 207 30% 95%;
-    --secondary-foreground: 207 90% 40%;
-
-    --muted: 210 20% 96%;
-    --muted-foreground: 210 15% 45%;
-
-    --accent: 207 100% 96%;
-    --accent-foreground: 207 90% 40%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    --info: 207 90% 54%;
-    --info-foreground: 0 0% 100%;
-
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 207 90% 54%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 210 50% 15%;
-    --sidebar-primary: 207 90% 54%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 207 100% 96%;
-    --sidebar-accent-foreground: 207 90% 40%;
-    --sidebar-border: 210 20% 90%;
-    --sidebar-ring: 207 90% 54%;
-  }
-
-  .dark {
-    --background: 220 20% 10%;
+    --background: 220 25% 10%;
     --foreground: 210 40% 98%;
-
-    --card: 220 20% 14%;
+    
+    --card: 220 25% 14%;
     --card-foreground: 210 40% 98%;
-
-    --popover: 220 20% 14%;
+    
+    --popover: 220 25% 12%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 207 90% 54%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 20% 20%;
-    --secondary-foreground: 207 90% 70%;
-
-    --muted: 220 20% 18%;
-    --muted-foreground: 210 15% 60%;
-
-    --accent: 220 30% 20%;
-    --accent-foreground: 207 90% 70%;
-
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 70% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 90% 55%;
-    --warning-foreground: 0 0% 100%;
-
-    --info: 207 90% 60%;
-    --info-foreground: 0 0% 100%;
-
+    
+    --primary: 170 80% 50%;
+    --primary-foreground: 220 25% 10%;
+    
+    --secondary: 260 70% 60%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 220 20% 20%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 45 100% 60%;
+    --accent-foreground: 220 25% 10%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --success: 150 80% 45%;
+    --success-foreground: 210 40% 98%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 25% 10%;
+    
+    --info: 200 100% 55%;
+    --info-foreground: 210 40% 98%;
+    
     --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 207 90% 54%;
-
-    --sidebar-background: 220 20% 12%;
+    --input: 220 20% 18%;
+    --ring: 170 80% 50%;
+    
+    --radius: 0.75rem;
+    
+    --sidebar-background: 220 25% 8%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 207 90% 54%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 30% 20%;
-    --sidebar-accent-foreground: 207 90% 70%;
-    --sidebar-border: 220 20% 22%;
-    --sidebar-ring: 207 90% 54%;
+    --sidebar-primary: 170 80% 50%;
+    --sidebar-primary-foreground: 220 25% 10%;
+    --sidebar-accent: 220 25% 16%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 170 80% 50%;
   }
 }
 
@@ -111,24 +63,40 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
-@layer utilities {
-  .stat-card {
-    @apply bg-gradient-to-br from-accent/50 to-accent rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
   
-  .nav-link {
-    @apply px-4 py-2 text-muted-foreground hover:text-primary transition-colors relative;
+  .feature-card {
+    @apply bg-card border border-border rounded-2xl p-6 transition-all duration-300;
   }
   
-  .nav-link.active {
-    @apply text-primary;
+  .feature-card:hover {
+    @apply border-primary/30;
+    box-shadow: 0 0 30px hsl(170 80% 50% / 0.15);
+    transform: translateY(-2px);
   }
   
-  .nav-link.active::after {
-    @apply content-[''] absolute bottom-0 left-0 right-0 h-0.5 bg-primary;
+  .nav-item {
+    @apply px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 rounded-lg;
+  }
+  
+  .nav-item:hover {
+    @apply text-foreground bg-muted/50;
+  }
+  
+  .nav-item.active {
+    @apply text-primary bg-primary/10;
+  }
+  
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(170 80% 50%), hsl(200 100% 55%));
   }
 }

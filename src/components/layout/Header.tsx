@@ -1,11 +1,12 @@
-import { User, Globe, Monitor } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { 
+  Home, 
+  Cpu, 
+  HardDrive, 
+  Shield, 
+  History, 
+  Settings,
+  Sparkles
+} from "lucide-react";
 
 interface HeaderProps {
   activeTab: string;
@@ -13,77 +14,52 @@ interface HeaderProps {
 }
 
 const tabs = [
-  { id: "inicio", label: "Início" },
-  { id: "descubra", label: "Descubra" },
-  { id: "suporte", label: "Suporte" },
-  { id: "historico", label: "Histórico" },
-  { id: "configuracoes", label: "Configurações" },
+  { id: "inicio", label: "Início", icon: Home },
+  { id: "hardware", label: "Hardware", icon: Cpu },
+  { id: "limpeza", label: "Limpeza", icon: HardDrive },
+  { id: "protecao", label: "Proteção", icon: Shield },
+  { id: "historico", label: "Histórico", icon: History },
+  { id: "configuracoes", label: "Configurações", icon: Settings },
 ];
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
   return (
-    <header className="bg-card border-b border-border">
+    <header className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Logo */}
-        <h1 className="text-xl font-semibold text-primary">
-          SystemAssist
-        </h1>
-
-        {/* Right side actions */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-            <User className="h-4 w-4" />
-            Fazer login
-          </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-                <Globe className="h-4 w-4" />
-                Português (BR)
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>Português (BR)</DropdownMenuItem>
-              <DropdownMenuItem>English (US)</DropdownMenuItem>
-              <DropdownMenuItem>Español</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-info flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">
+              OptimaPC
+            </h1>
+            <p className="text-xs text-muted-foreground">Sistema Universal</p>
+          </div>
         </div>
-      </div>
 
-      {/* Navigation tabs */}
-      <div className="flex items-center justify-between px-6">
+        {/* Navigation */}
         <nav className="flex items-center gap-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                activeTab === tab.id
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+              className={`nav-item flex items-center gap-2 ${
+                activeTab === tab.id ? "active" : ""
               }`}
             >
+              <tab.icon className="h-4 w-4" />
               {tab.label}
-              {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-              )}
             </button>
           ))}
         </nav>
 
-        {/* Service info */}
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Plano de serviço:</span>
-            <span className="inline-flex items-center gap-1 bg-success/10 text-success px-2 py-0.5 rounded-full text-xs font-medium">
-              ✓ Basic
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Monitor className="h-4 w-4" />
-            Etiqueta de serviço: <span className="font-mono text-primary">J624294</span>
+        {/* Status */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 border border-success/20 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span className="text-xs font-medium text-success">Sistema OK</span>
           </div>
         </div>
       </div>
