@@ -11,9 +11,11 @@ import {
   Monitor,
   ChevronRight,
   Play,
-  Clock
+  Clock,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useHardwareDetection } from "@/hooks/useHardwareDetection";
 
 interface HomePageProps {
   onNavigate: (tab: string) => void;
@@ -46,16 +48,48 @@ const quickActions = [
   },
 ];
 
-const systemModules = [
-  { icon: Cpu, label: "Processador", status: "ok", info: "Intel Core i7" },
-  { icon: Database, label: "Memória RAM", status: "ok", info: "16 GB DDR4" },
-  { icon: HardDrive, label: "Armazenamento", status: "warning", info: "78% usado" },
-  { icon: Monitor, label: "Display", status: "ok", info: "1920x1080" },
-  { icon: Wifi, label: "Rede", status: "ok", info: "Conectado" },
-  { icon: Battery, label: "Energia", status: "ok", info: "AC Power" },
-];
-
 export function HomePage({ onNavigate }: HomePageProps) {
+  const { hardware, isLoading } = useHardwareDetection();
+
+  const systemModules = [
+    { 
+      icon: Cpu, 
+      label: "Processador", 
+      status: "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware ? `${hardware.cpu.cores} núcleos` : "Indisponível" 
+    },
+    { 
+      icon: Database, 
+      label: "Memória RAM", 
+      status: "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware?.memory.total || "Indisponível" 
+    },
+    { 
+      icon: HardDrive, 
+      label: "Armazenamento", 
+      status: hardware && hardware.storage.percentage > 80 ? "warning" as const : "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware ? `${hardware.storage.percentage}% usado` : "Indisponível" 
+    },
+    { 
+      icon: Monitor, 
+      label: "Display", 
+      status: "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware?.display.resolution || "Indisponível" 
+    },
+    { 
+      icon: Wifi, 
+      label: "Rede", 
+      status: hardware?.network.status === "Desconectado" ? "warning" as const : "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware?.network.status || "Indisponível" 
+    },
+    { 
+      icon: Battery, 
+      label: "Energia", 
+      status: hardware && !hardware.battery.charging && hardware.battery.level < 20 ? "warning" as const : "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware?.battery.status || "Indisponível" 
+    },
+  ];
+
   return (
     <div className="min-h-[calc(100vh-80px)] p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -68,7 +102,11 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </h2>
               <p className="text-muted-foreground max-w-xl">
                 Seu assistente universal de otimização. Funciona em Windows, Linux e macOS.
-                Mantenha seu computador sempre rápido e seguro.
+                {hardware && (
+                  <span className="ml-1 text-primary">
+                    • Detectado: {hardware.os}
+                  </span>
+                )}
               </p>
             </div>
             <Button 
@@ -108,8 +146,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
           {/* Hardware Status */}
           <div className="lg:col-span-2 glass-card p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium text-foreground">Status do Hardware</h3>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-medium text-foreground">Status do Hardware</h3>
+                {isLoading && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => onNavigate('hardware')}
+              >
                 Ver detalhes
               </Button>
             </div>
@@ -146,28 +192,50 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-muted-foreground">Saúde do Sistema</span>
-                  <span className="text-sm font-medium text-success">92%</span>
+                  <span className="text-sm font-medium text-success">100%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full w-[92%] bg-gradient-to-r from-success to-emerald-400 rounded-full" />
+                  <div className="h-full w-full bg-gradient-to-r from-success to-emerald-400 rounded-full" />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-muted-foreground">Espaço em Disco</span>
-                  <span className="text-sm font-medium text-warning">78%</span>
+                  <span className={`text-sm font-medium ${
+                    hardware && hardware.storage.percentage > 80 ? 'text-warning' : 'text-info'
+                  }`}>
+                    {hardware ? `${hardware.storage.percentage}%` : '0%'}
+                  </span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full w-[78%] bg-gradient-to-r from-warning to-accent rounded-full" />
+                  <div 
+                    className={`h-full bg-gradient-to-r ${
+                      hardware && hardware.storage.percentage > 80 
+                        ? 'from-warning to-accent' 
+                        : 'from-info to-primary'
+                    } rounded-full transition-all duration-500`}
+                    style={{ width: `${hardware?.storage.percentage || 0}%` }}
+                  />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Uso de Memória</span>
-                  <span className="text-sm font-medium text-info">45%</span>
+                  <span className="text-sm text-muted-foreground">Bateria</span>
+                  <span className={`text-sm font-medium ${
+                    hardware && hardware.battery.level < 20 ? 'text-warning' : 'text-success'
+                  }`}>
+                    {hardware ? `${hardware.battery.level}%` : '100%'}
+                  </span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full w-[45%] bg-gradient-to-r from-info to-primary rounded-full" />
+                  <div 
+                    className={`h-full bg-gradient-to-r ${
+                      hardware && hardware.battery.level < 20 
+                        ? 'from-warning to-destructive' 
+                        : 'from-success to-emerald-400'
+                    } rounded-full transition-all duration-500`}
+                    style={{ width: `${hardware?.battery.level || 100}%` }}
+                  />
                 </div>
               </div>
               
