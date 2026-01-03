@@ -4,9 +4,9 @@ import {
   HardDrive, 
   Shield, 
   History, 
-  Settings,
-  Sparkles
+  Settings
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 interface HeaderProps {
   activeTab: string;
@@ -28,15 +28,11 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
       <div className="flex items-center justify-between px-6 py-4">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-info flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              Essencial
-            </h1>
-            <p className="text-xs text-muted-foreground">Sistema em Ordem</p>
-          </div>
+          <img 
+            src={logo} 
+            alt="Essencial Logo" 
+            className="h-10 w-auto"
+          />
         </div>
 
         {/* Navigation */}
