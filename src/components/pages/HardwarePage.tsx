@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Cpu, 
   HardDrive, 
@@ -16,16 +16,143 @@ import {
   AlertCircle,
   ChevronRight,
   Laptop,
-  Loader2
+  Loader2,
+  Clock,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useHardwareDetection } from "@/hooks/useHardwareDetection";
 import { toast } from "sonner";
+
+interface DriverInfo {
+  id: string;
+  name: string;
+  icon: React.ElementType;
+  status: "ok" | "update" | "warning" | "downloading" | "installing";
+  details: string;
+  currentVersion: string;
+  newVersion?: string;
+  driverDate: string;
+  downloadProgress?: number;
+}
 
 export function HardwarePage() {
   const { hardware, isLoading } = useHardwareDetection();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [hasScanned, setHasScanned] = useState(false);
+  const [drivers, setDrivers] = useState<DriverInfo[]>([]);
+
+  // Gera lista de drivers baseado no hardware detectado
+  useEffect(() => {
+    if (!hardware) return;
+    
+    const initialDrivers: DriverInfo[] = [
+      { 
+        id: "os",
+        name: "Sistema Operacional", 
+        icon: Laptop, 
+        status: "ok", 
+        details: hardware.os,
+        currentVersion: "Atual",
+        driverDate: new Date().toLocaleDateString('pt-BR')
+      },
+      { 
+        id: "cpu",
+        name: "Processador", 
+        icon: Cpu, 
+        status: "ok", 
+        details: `${hardware.cpu.name} (${hardware.cpu.cores} núcleos)`,
+        currentVersion: "1.0.0",
+        driverDate: "01/01/2024"
+      },
+      { 
+        id: "memory",
+        name: "Memória RAM", 
+        icon: Database, 
+        status: "ok", 
+        details: hardware.memory.total !== "Desconhecido" ? hardware.memory.total : "Detectando...",
+        currentVersion: "-",
+        driverDate: "-"
+      },
+      { 
+        id: "gpu",
+        name: "Placa de Vídeo", 
+        icon: Monitor, 
+        status: "ok", 
+        details: `Resolução: ${hardware.display.resolution}`,
+        currentVersion: "31.0.15.4601",
+        driverDate: "15/10/2024"
+      },
+      { 
+        id: "storage",
+        name: "Armazenamento", 
+        icon: HardDrive, 
+        status: hardware.storage.percentage > 80 ? "warning" : "ok", 
+        details: `${hardware.storage.used} / ${hardware.storage.total} (${hardware.storage.percentage}%)`,
+        currentVersion: "10.0.0",
+        driverDate: "20/09/2024"
+      },
+      { 
+        id: "motherboard",
+        name: "Placa-mãe", 
+        icon: CircuitBoard, 
+        status: "ok", 
+        details: hardware.deviceType,
+        currentVersion: "BIOS 1.0",
+        driverDate: "01/06/2024"
+      },
+      { 
+        id: "network",
+        name: "Rede", 
+        icon: Wifi, 
+        status: hardware.network.status === "Conectado" ? "ok" : "warning", 
+        details: `${hardware.network.status} - ${hardware.network.type}`,
+        currentVersion: "22.180.0",
+        driverDate: "05/11/2024"
+      },
+      { 
+        id: "bluetooth",
+        name: "Bluetooth", 
+        icon: Bluetooth, 
+        status: "ok", 
+        details: "Disponível",
+        currentVersion: "22.180.0",
+        driverDate: "05/11/2024"
+      },
+      { 
+        id: "usb",
+        name: "USB Controllers", 
+        icon: Usb, 
+        status: "ok", 
+        details: "Funcionando",
+        currentVersion: "10.0.22621",
+        driverDate: "21/06/2024"
+      },
+      { 
+        id: "audio",
+        name: "Áudio", 
+        icon: Microchip, 
+        status: "ok", 
+        details: "Dispositivo de áudio padrão",
+        currentVersion: "6.0.9391.1",
+        driverDate: "18/08/2024"
+      },
+      { 
+        id: "power",
+        name: "Energia", 
+        icon: Battery, 
+        status: "ok", 
+        details: hardware.battery.status,
+        currentVersion: "10.0.22621",
+        driverDate: "21/06/2024"
+      },
+    ];
+    
+    setDrivers(initialDrivers);
+  }, [hardware]);
 
   const handleDetectHardware = () => {
     setIsDetecting(true);
@@ -35,129 +162,190 @@ export function HardwarePage() {
     }, 1000);
   };
 
-  const handleUpdateAll = async () => {
-    setIsUpdating(true);
-    toast.info("Verificando atualizações de drivers...");
-    
-    // Simula verificação de drivers
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    toast.success("Sistema verificado! Todos os drivers estão atualizados.", {
-      description: `${hardware?.os || 'Sistema'} - Nenhuma atualização necessária`
+  const handleScanForUpdates = async () => {
+    setIsScanning(true);
+    toast.info("Verificando atualizações de drivers...", {
+      description: "Isso pode levar alguns segundos"
     });
     
-    setIsUpdating(false);
-  };
-
-  const getSystemComponents = () => {
-    if (!hardware) return [];
+    // Simula scan progressivo
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    return [
-      { 
-        name: "Sistema Operacional", 
-        icon: Laptop, 
-        status: "ok" as const, 
-        details: hardware.os,
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Processador", 
-        icon: Cpu, 
-        status: "ok" as const, 
-        details: `${hardware.cpu.name} (${hardware.cpu.cores} núcleos)`,
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Memória RAM", 
-        icon: Database, 
-        status: "ok" as const, 
-        details: hardware.memory.total !== "Desconhecido" ? hardware.memory.total : "Detectando...",
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Placa de Vídeo", 
-        icon: Monitor, 
-        status: "ok" as const, 
-        details: `Resolução: ${hardware.display.resolution}`,
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Armazenamento", 
-        icon: HardDrive, 
-        status: hardware.storage.percentage > 80 ? "warning" as const : "ok" as const, 
-        details: `${hardware.storage.used} / ${hardware.storage.total} (${hardware.storage.percentage}%)`,
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Placa-mãe", 
-        icon: CircuitBoard, 
-        status: "ok" as const, 
-        details: `${hardware.deviceType}`,
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Rede", 
-        icon: Wifi, 
-        status: hardware.network.status === "Conectado" ? "ok" as const : "warning" as const, 
-        details: `${hardware.network.status} - ${hardware.network.type}`,
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Bluetooth", 
-        icon: Bluetooth, 
-        status: "ok" as const, 
-        details: "Disponível",
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "USB Controllers", 
-        icon: Usb, 
-        status: "ok" as const, 
-        details: "Funcionando",
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Áudio", 
-        icon: Microchip, 
-        status: "ok" as const, 
-        details: "Dispositivo de áudio padrão",
-        driver: "-", 
-        driverDate: "-" 
-      },
-      { 
-        name: "Energia", 
-        icon: Battery, 
-        status: "ok" as const, 
-        details: hardware.battery.status,
-        driver: "-", 
-        driverDate: "-" 
-      },
-    ];
+    // Simula encontrar algumas atualizações
+    const driversWithUpdates = ["gpu", "audio", "network"];
+    const newVersions: Record<string, string> = {
+      gpu: "31.0.15.5000",
+      audio: "6.0.9500.1",
+      network: "22.200.0"
+    };
+    
+    setDrivers(prev => prev.map(driver => {
+      if (driversWithUpdates.includes(driver.id)) {
+        return {
+          ...driver,
+          status: "update" as const,
+          newVersion: newVersions[driver.id]
+        };
+      }
+      return driver;
+    }));
+    
+    setIsScanning(false);
+    setHasScanned(true);
+    
+    const updatesCount = driversWithUpdates.length;
+    toast.success(`Verificação concluída!`, {
+      description: `${updatesCount} atualizações disponíveis`
+    });
   };
 
-  const systemComponents = getSystemComponents();
+  const handleDownloadDriver = async (driverId: string) => {
+    // Inicia download
+    setDrivers(prev => prev.map(driver => 
+      driver.id === driverId 
+        ? { ...driver, status: "downloading" as const, downloadProgress: 0 }
+        : driver
+    ));
+    
+    const driverName = drivers.find(d => d.id === driverId)?.name || "Driver";
+    toast.info(`Baixando ${driverName}...`);
+    
+    // Simula progresso de download
+    for (let progress = 0; progress <= 100; progress += 10) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setDrivers(prev => prev.map(driver => 
+        driver.id === driverId 
+          ? { ...driver, downloadProgress: progress }
+          : driver
+      ));
+    }
+    
+    // Inicia instalação
+    setDrivers(prev => prev.map(driver => 
+      driver.id === driverId 
+        ? { ...driver, status: "installing" as const }
+        : driver
+    ));
+    
+    toast.info(`Instalando ${driverName}...`);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Finaliza
+    setDrivers(prev => prev.map(driver => 
+      driver.id === driverId 
+        ? { 
+            ...driver, 
+            status: "ok" as const, 
+            currentVersion: driver.newVersion || driver.currentVersion,
+            newVersion: undefined,
+            downloadProgress: undefined,
+            driverDate: new Date().toLocaleDateString('pt-BR')
+          }
+        : driver
+    ));
+    
+    toast.success(`${driverName} atualizado com sucesso!`);
+  };
+
+  const handleUpdateAll = async () => {
+    const driversToUpdate = drivers.filter(d => d.status === "update");
+    
+    if (driversToUpdate.length === 0) {
+      // Se não há atualizações, faz scan primeiro
+      await handleScanForUpdates();
+      return;
+    }
+    
+    setIsUpdating(true);
+    toast.info(`Atualizando ${driversToUpdate.length} drivers...`);
+    
+    for (const driver of driversToUpdate) {
+      await handleDownloadDriver(driver.id);
+    }
+    
+    setIsUpdating(false);
+    toast.success("Todos os drivers foram atualizados!", {
+      description: `${hardware?.os || 'Sistema'} está totalmente atualizado`
+    });
+  };
+
+  const updatesAvailable = drivers.filter(d => d.status === "update").length;
+  const warningsCount = drivers.filter(d => d.status === "warning").length;
+  const okCount = drivers.filter(d => d.status === "ok").length;
+
+  const getStatusIcon = (status: DriverInfo["status"]) => {
+    switch (status) {
+      case "downloading":
+      case "installing":
+        return <Loader2 className="h-5 w-5 animate-spin text-info" />;
+      case "update":
+        return <Download className="h-5 w-5 text-info" />;
+      case "warning":
+        return <AlertCircle className="h-5 w-5 text-warning" />;
+      default:
+        return <CheckCircle className="h-5 w-5 text-success" />;
+    }
+  };
+
+  const getStatusBadge = (driver: DriverInfo) => {
+    switch (driver.status) {
+      case "downloading":
+        return (
+          <div className="flex items-center gap-2">
+            <div className="w-24">
+              <Progress value={driver.downloadProgress} className="h-2" />
+            </div>
+            <span className="text-xs text-info">{driver.downloadProgress}%</span>
+          </div>
+        );
+      case "installing":
+        return (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-info/20 text-info text-xs font-medium">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Instalando...
+          </div>
+        );
+      case "update":
+        return (
+          <Button 
+            size="sm" 
+            className="h-7 text-xs gap-1 bg-info hover:bg-info/90"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownloadDriver(driver.id);
+            }}
+          >
+            <Download className="h-3 w-3" />
+            Atualizar
+          </Button>
+        );
+      case "warning":
+        return (
+          <div className="px-3 py-1 rounded-full bg-warning/20 text-warning text-xs font-medium">
+            Atenção
+          </div>
+        );
+      default:
+        return (
+          <div className="px-3 py-1 rounded-full bg-success/20 text-success text-xs font-medium">
+            OK
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-80px)] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-2xl font-semibold text-foreground">Hardware & Drivers</h2>
             <p className="text-muted-foreground">
               {hardware ? `Sistema: ${hardware.os} - ${hardware.deviceType}` : 'Detectando sistema...'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Button 
               variant="outline" 
               className="gap-2" 
@@ -169,19 +357,32 @@ export function HardwarePage() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Detectar Hardware
+              Detectar
+            </Button>
+            <Button 
+              variant="outline"
+              className="gap-2" 
+              onClick={handleScanForUpdates}
+              disabled={isScanning || isUpdating}
+            >
+              {isScanning ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              {isScanning ? "Verificando..." : "Buscar Atualizações"}
             </Button>
             <Button 
               className="gap-2 bg-gradient-to-r from-primary to-info hover:opacity-90 text-primary-foreground"
               onClick={handleUpdateAll}
-              disabled={isUpdating || isLoading}
+              disabled={isUpdating || isLoading || isScanning}
             >
               {isUpdating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              {isUpdating ? "Verificando..." : "Atualizar Todos"}
+              {isUpdating ? "Atualizando..." : updatesAvailable > 0 ? `Atualizar Todos (${updatesAvailable})` : "Atualizar Todos"}
             </Button>
           </div>
         </div>
@@ -194,8 +395,8 @@ export function HardwarePage() {
                 <CheckCircle className="h-6 w-6 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{systemComponents.filter(c => c.status === 'ok').length}</p>
-                <p className="text-sm text-muted-foreground">Componentes OK</p>
+                <p className="text-2xl font-bold text-foreground">{okCount}</p>
+                <p className="text-sm text-muted-foreground">Drivers atualizados</p>
               </div>
             </div>
           </div>
@@ -205,7 +406,7 @@ export function HardwarePage() {
                 <Download className="h-6 w-6 text-info" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">0</p>
+                <p className="text-2xl font-bold text-foreground">{updatesAvailable}</p>
                 <p className="text-sm text-muted-foreground">Atualizações disponíveis</p>
               </div>
             </div>
@@ -216,17 +417,45 @@ export function HardwarePage() {
                 <AlertCircle className="h-6 w-6 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{systemComponents.filter(c => c.status === 'warning').length}</p>
+                <p className="text-2xl font-bold text-foreground">{warningsCount}</p>
                 <p className="text-sm text-muted-foreground">Atenção necessária</p>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Scan prompt */}
+        {!hasScanned && !isScanning && (
+          <div className="glass-card p-4 border-info/30 bg-info/5">
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-info" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Verificação de drivers pendente</p>
+                <p className="text-xs text-muted-foreground">Clique em "Buscar Atualizações" para verificar se há drivers desatualizados</p>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="gap-1 border-info/30 text-info hover:bg-info/10"
+                onClick={handleScanForUpdates}
+              >
+                <Search className="h-3 w-3" />
+                Verificar agora
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Components List */}
         <div className="glass-card">
-          <div className="p-4 border-b border-border">
+          <div className="p-4 border-b border-border flex items-center justify-between">
             <h3 className="font-medium text-foreground">Componentes do Sistema</h3>
+            {hasScanned && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <CheckCircle className="h-3 w-3 text-success" />
+                Última verificação: agora
+              </span>
+            )}
           </div>
           {isLoading ? (
             <div className="p-8 flex items-center justify-center">
@@ -235,35 +464,37 @@ export function HardwarePage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {systemComponents.map((component) => (
+              {drivers.map((driver) => (
                 <div 
-                  key={component.name}
+                  key={driver.id}
                   className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors cursor-pointer group"
                 >
-                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      component.status === 'ok' ? 'bg-success/20' : 'bg-warning/20'
+                      driver.status === 'ok' ? 'bg-success/20' :
+                      driver.status === 'update' || driver.status === 'downloading' || driver.status === 'installing' ? 'bg-info/20' : 
+                      'bg-warning/20'
                     }`}>
-                      <component.icon className={`h-5 w-5 ${
-                        component.status === 'ok' ? 'text-success' : 'text-warning'
-                      }`} />
+                      {getStatusIcon(driver.status)}
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{component.name}</p>
-                      <p className="text-sm text-muted-foreground">{component.details}</p>
+                      <p className="font-medium text-foreground">{driver.name}</p>
+                      <p className="text-sm text-muted-foreground">{driver.details}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Driver: {component.driver}</p>
-                      <p className="text-xs text-muted-foreground">{component.driverDate}</p>
+                  <div className="flex items-center gap-4 md:gap-6">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm text-muted-foreground">
+                        {driver.newVersion ? (
+                          <span className="text-info">{driver.currentVersion} → {driver.newVersion}</span>
+                        ) : (
+                          `v${driver.currentVersion}`
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{driver.driverDate}</p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      component.status === 'ok' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'
-                    }`}>
-                      {component.status === 'ok' ? 'OK' : 'Atenção'}
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    {getStatusBadge(driver)}
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors hidden md:block" />
                   </div>
                 </div>
               ))}
