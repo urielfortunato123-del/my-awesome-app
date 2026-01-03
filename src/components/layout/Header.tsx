@@ -33,9 +33,9 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-foreground">
-              OptimaPC
+              Essencial
             </h1>
-            <p className="text-xs text-muted-foreground">Sistema Universal</p>
+            <p className="text-xs text-muted-foreground">Sistema em Ordem</p>
           </div>
         </div>
 

@@ -35,7 +35,7 @@ export function InitialBackupModal() {
               <Shield className="h-10 w-10 text-success" />
             </div>
             <h2 className="text-2xl font-semibold text-foreground mb-3">
-              Bem-vindo ao OptimaPC
+              Bem-vindo ao Essencial
             </h2>
             <p className="text-muted-foreground mb-6">
               Antes de começar, vamos criar um ponto de restauração inicial do seu sistema. 

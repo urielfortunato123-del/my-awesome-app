@@ -18,7 +18,7 @@ export function VirtualAssistant() {
     {
       id: "1",
       role: "assistant",
-      content: "Olá! Sou o assistente do OptimaPC. Posso ajudar com otimização, limpeza, diagnósticos e muito mais. Como posso ajudar?"
+      content: "Olá! Sou o assistente do Essencial. Posso ajudar com otimização, limpeza, diagnósticos e muito mais. Como posso ajudar?"
     }
   ]);
 
