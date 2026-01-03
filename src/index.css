@@ -5,7 +5,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
-  :root {
+  :root,
+  .dark {
     --background: 220 25% 10%;
     --foreground: 210 40% 98%;
     
@@ -53,6 +54,8 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 220 20% 18%;
     --sidebar-ring: 170 80% 50%;
+    
+    color-scheme: dark;
   }
 }
 
