@@ -49,18 +49,21 @@ const Index = () => {
 
   return (
     <BackupProvider>
-      <div className="min-h-screen bg-background flex flex-col">
-        <InitialBackupModal />
-        <Header activeTab={activeTab} onTabChange={handleNavigate} />
-        <main className="flex-1">
-          {renderContent()}
-        </main>
-        <footer className="py-4 text-center border-t border-border bg-sidebar">
-          <p className="text-xs text-muted-foreground">
-            Desenvolvido por <span className="text-primary font-medium">Uriel da Fonseca Fortunato</span>
-          </p>
-        </footer>
-        <VirtualAssistant />
+      <div className="min-h-screen bg-background flex justify-center">
+        {/* Container 9:16 (vertical mobile) */}
+        <div className="w-full max-w-[430px] min-h-screen flex flex-col bg-background shadow-2xl">
+          <InitialBackupModal />
+          <Header activeTab={activeTab} onTabChange={handleNavigate} />
+          <main className="flex-1 overflow-y-auto">
+            {renderContent()}
+          </main>
+          <footer className="py-2 text-center border-t border-border bg-sidebar shrink-0">
+            <p className="text-[10px] text-muted-foreground">
+              Desenvolvido por <span className="text-primary font-medium">Uriel da Fonseca Fortunato</span>
+            </p>
+          </footer>
+          <VirtualAssistant />
+        </div>
       </div>
     </BackupProvider>
   );

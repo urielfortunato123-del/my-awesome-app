@@ -136,57 +136,55 @@ export function UpdateChecker() {
       <Button
         variant="ghost"
         size="sm"
-        className="gap-2 text-muted-foreground hover:text-foreground"
+        className="gap-1 text-muted-foreground hover:text-foreground h-7 px-2 text-[10px]"
         onClick={handleCheckUpdate}
         disabled={isChecking}
       >
         {isChecking ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-3 w-3 animate-spin" />
         ) : updateAvailable ? (
-          <Download className="h-4 w-4 text-info" />
+          <Download className="h-3 w-3 text-info" />
         ) : (
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className="h-3 w-3" />
         )}
-        {isChecking ? "Verificando..." : updateAvailable ? "Atualizar" : "Verificar Atualizações"}
+        {isChecking ? "..." : updateAvailable ? "Atualizar" : "Atualizar"}
       </Button>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-[calc(100%-2rem)] w-full rounded-2xl p-4">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Rocket className="h-5 w-5 text-primary" />
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Rocket className="h-4 w-4 text-primary" />
               Nova Versão Disponível!
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Version info */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-xs">
               <div>
-                <p className="text-sm text-muted-foreground">Versão atual</p>
+                <p className="text-muted-foreground">Atual</p>
                 <p className="font-semibold text-foreground">{APP_VERSION}</p>
               </div>
-              <div className="text-2xl text-muted-foreground">→</div>
+              <div className="text-lg text-muted-foreground">→</div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Nova versão</p>
+                <p className="text-muted-foreground">Nova</p>
                 <p className="font-semibold text-primary">{NEW_VERSION}</p>
               </div>
             </div>
 
             {/* Changelog */}
             <div>
-              <h4 className="text-sm font-medium text-foreground mb-3">Novidades e Melhorias:</h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+              <h4 className="text-xs font-medium text-foreground mb-2">Novidades:</h4>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                 {changelog.map((item, index) => (
                   <div 
                     key={index}
-                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors"
+                    className="flex items-start gap-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors"
                   >
-                    <div className="mt-0.5">{getIcon(item.type)}</div>
-                    <div className="flex-1">
-                      <p className="text-sm text-foreground">{item.description}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${getLabelColor(item.type)}`}>
+                    <div className="mt-0.5 shrink-0">{getIcon(item.type)}</div>
+                    <p className="text-xs text-foreground flex-1">{item.description}</p>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full shrink-0 ${getLabelColor(item.type)}`}>
                       {getLabel(item.type)}
                     </span>
                   </div>
@@ -195,34 +193,36 @@ export function UpdateChecker() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 pt-1">
               <Button 
                 variant="outline" 
-                className="flex-1"
+                size="sm"
+                className="flex-1 h-8 text-xs"
                 onClick={() => setShowDialog(false)}
                 disabled={isUpdating}
               >
                 Depois
               </Button>
               <Button 
-                className="flex-1 gap-2 bg-gradient-to-r from-primary to-info hover:opacity-90"
+                size="sm"
+                className="flex-1 gap-1.5 h-8 text-xs bg-gradient-to-r from-primary to-info hover:opacity-90"
                 onClick={handleUpdate}
                 disabled={isUpdating || updateComplete}
               >
                 {isUpdating ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                     Atualizando...
                   </>
                 ) : updateComplete ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4" />
+                    <CheckCircle2 className="h-3 w-3" />
                     Concluído!
                   </>
                 ) : (
                   <>
-                    <Download className="h-4 w-4" />
-                    Atualizar Agora
+                    <Download className="h-3 w-3" />
+                    Atualizar
                   </>
                 )}
               </Button>
