@@ -564,9 +564,9 @@ export function useHardwareDetection() {
   const [hardware, setHardware] = useState<HardwareInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const detectHardware = async () => {
-      try {
+  const detectHardware = async () => {
+    setIsLoading(true);
+    try {
         const ua = navigator.userAgent;
         const parsed = parseUserAgent(ua);
         const manufacturer = detectManufacturer(parsed.deviceModel, parsed.os, ua);
@@ -739,8 +739,9 @@ export function useHardwareDetection() {
       } finally {
         setIsLoading(false);
       }
-    };
+  };
 
+  useEffect(() => {
     detectHardware();
 
     // Listeners de rede
@@ -760,5 +761,9 @@ export function useHardwareDetection() {
     };
   }, []);
 
-  return { hardware, isLoading };
+  const refetch = () => {
+    detectHardware();
+  };
+
+  return { hardware, isLoading, refetch };
 }

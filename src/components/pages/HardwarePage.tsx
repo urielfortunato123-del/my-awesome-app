@@ -38,7 +38,7 @@ interface DriverInfo {
 }
 
 export function HardwarePage() {
-  const { hardware, isLoading } = useHardwareDetection();
+  const { hardware, isLoading, refetch } = useHardwareDetection();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -194,12 +194,12 @@ export function HardwarePage() {
     setDrivers(initialDrivers);
   }, [hardware]);
 
-  const handleDetectHardware = () => {
+  const handleDetectHardware = async () => {
     setIsDetecting(true);
     toast.info("Detectando hardware...");
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    await refetch();
+    setIsDetecting(false);
+    toast.success("Hardware detectado com sucesso!");
   };
 
   const handleScanForUpdates = async () => {
