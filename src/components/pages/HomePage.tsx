@@ -97,11 +97,11 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <div className="glass-card p-8">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-semibold text-foreground mb-2">
-                Bem-vindo ao <span className="gradient-text">OptimaPC</span>
+            <h2 className="text-3xl font-semibold text-foreground mb-2">
+                Bem-vindo ao <span className="gradient-text">Essencial</span>
               </h2>
               <p className="text-muted-foreground max-w-xl">
-                Seu assistente universal de otimização. Funciona em Windows, Linux e macOS.
+                Sistema em Ordem. Funciona em Windows, Linux e macOS.
                 {hardware && (
                   <span className="ml-1 text-primary">
                     • Detectado: {hardware.os}
