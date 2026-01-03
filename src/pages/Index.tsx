@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { VirtualAssistant } from "@/components/layout/VirtualAssistant";
 import { InitialBackupModal } from "@/components/layout/InitialBackupModal";
+import { MobileContainer } from "@/components/layout/MobileContainer";
 import { HomePage } from "@/components/pages/HomePage";
 import { HardwarePage } from "@/components/pages/HardwarePage";
 import { CleanupPage } from "@/components/pages/CleanupPage";
@@ -49,19 +50,19 @@ const Index = () => {
 
   return (
     <BackupProvider>
-      <div className="min-h-screen bg-background flex flex-col">
+      <MobileContainer>
         <InitialBackupModal />
         <Header activeTab={activeTab} onTabChange={handleNavigate} />
         <main className="flex-1 overflow-y-auto">
           {renderContent()}
         </main>
-        <footer className="py-2 md:py-3 text-center border-t border-border bg-sidebar shrink-0">
-          <p className="text-[10px] md:text-xs text-muted-foreground">
+        <footer className="py-1.5 md:py-3 text-center border-t border-border bg-sidebar shrink-0">
+          <p className="text-[9px] md:text-xs text-muted-foreground">
             Desenvolvido por <span className="text-primary font-medium">Uriel da Fonseca Fortunato</span>
           </p>
         </footer>
         <VirtualAssistant />
-      </div>
+      </MobileContainer>
     </BackupProvider>
   );
 };
