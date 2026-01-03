@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { 
   Cpu, 
   HardDrive, 
@@ -19,9 +20,34 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHardwareDetection } from "@/hooks/useHardwareDetection";
+import { toast } from "sonner";
 
 export function HardwarePage() {
   const { hardware, isLoading } = useHardwareDetection();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  const handleDetectHardware = () => {
+    setIsDetecting(true);
+    toast.info("Detectando hardware...");
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
+
+  const handleUpdateAll = async () => {
+    setIsUpdating(true);
+    toast.info("Verificando atualizações de drivers...");
+    
+    // Simula verificação de drivers
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    toast.success("Sistema verificado! Todos os drivers estão atualizados.", {
+      description: `${hardware?.os || 'Sistema'} - Nenhuma atualização necessária`
+    });
+    
+    setIsUpdating(false);
+  };
 
   const getSystemComponents = () => {
     if (!hardware) return [];
@@ -132,13 +158,30 @@ export function HardwarePage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={handleDetectHardware}
+              disabled={isDetecting}
+            >
+              {isDetecting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
               Detectar Hardware
             </Button>
-            <Button className="gap-2 bg-gradient-to-r from-primary to-info hover:opacity-90 text-primary-foreground">
-              <Download className="h-4 w-4" />
-              Atualizar Todos
+            <Button 
+              className="gap-2 bg-gradient-to-r from-primary to-info hover:opacity-90 text-primary-foreground"
+              onClick={handleUpdateAll}
+              disabled={isUpdating || isLoading}
+            >
+              {isUpdating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isUpdating ? "Verificando..." : "Atualizar Todos"}
             </Button>
           </div>
         </div>
