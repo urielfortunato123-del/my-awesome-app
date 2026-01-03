@@ -51,8 +51,17 @@ export function HardwarePage() {
     
     const initialDrivers: DriverInfo[] = [
       { 
+        id: "manufacturer",
+        name: "Fabricante", 
+        icon: CircuitBoard, 
+        status: "ok", 
+        details: hardware.manufacturer,
+        currentVersion: "-",
+        driverDate: "-"
+      },
+      { 
         id: "device",
-        name: "Dispositivo", 
+        name: "Modelo do Dispositivo", 
         icon: Laptop, 
         status: "ok", 
         details: hardware.deviceModel,
@@ -69,12 +78,21 @@ export function HardwarePage() {
         driverDate: new Date().toLocaleDateString('pt-BR')
       },
       { 
+        id: "kernel",
+        name: "Kernel", 
+        icon: Microchip, 
+        status: "ok", 
+        details: hardware.kernelVersion || "Não disponível",
+        currentVersion: "-",
+        driverDate: "-"
+      },
+      { 
         id: "browser",
         name: "Navegador", 
         icon: Monitor, 
         status: "ok", 
         details: hardware.browserVersion ? `${hardware.browser} v${hardware.browserVersion}` : hardware.browser,
-        currentVersion: hardware.browserVersion || "-",
+        currentVersion: hardware.browserEngine,
         driverDate: "-"
       },
       { 
@@ -83,7 +101,7 @@ export function HardwarePage() {
         icon: Cpu, 
         status: "ok", 
         details: `${hardware.cpu.name} (${hardware.cpu.cores} núcleos)`,
-        currentVersion: `${hardware.cpu.cores} cores`,
+        currentVersion: hardware.cpu.architecture,
         driverDate: "-"
       },
       { 
@@ -97,11 +115,20 @@ export function HardwarePage() {
       },
       { 
         id: "gpu",
+        name: "GPU / Placa Gráfica", 
+        icon: Monitor, 
+        status: "ok", 
+        details: hardware.webGLRenderer,
+        currentVersion: "-",
+        driverDate: "-"
+      },
+      { 
+        id: "display",
         name: "Tela", 
         icon: Monitor, 
         status: "ok", 
-        details: `${hardware.display.resolution} @${hardware.display.pixelRatio}x (${hardware.display.colorDepth}bit)`,
-        currentVersion: "-",
+        details: `${hardware.display.resolution} @${hardware.display.pixelRatio}x - ${hardware.screenType}`,
+        currentVersion: `${hardware.display.colorDepth}bit`,
         driverDate: "-"
       },
       { 
@@ -125,39 +152,32 @@ export function HardwarePage() {
         driverDate: "-"
       },
       { 
-        id: "bluetooth",
-        name: "Bluetooth", 
-        icon: Bluetooth, 
-        status: "ok", 
-        details: "Disponível",
-        currentVersion: "-",
-        driverDate: "-"
-      },
-      { 
-        id: "usb",
-        name: "USB", 
+        id: "touch",
+        name: "Touch", 
         icon: Usb, 
         status: "ok", 
-        details: "Funcionando",
-        currentVersion: "-",
-        driverDate: "-"
-      },
-      { 
-        id: "audio",
-        name: "Áudio", 
-        icon: Microchip, 
-        status: "ok", 
-        details: "Dispositivo de áudio",
+        details: hardware.touchSupport 
+          ? `Suportado (${hardware.maxTouchPoints} pontos)` 
+          : "Não suportado",
         currentVersion: "-",
         driverDate: "-"
       },
       { 
         id: "power",
-        name: "Energia", 
+        name: "Energia / Bateria", 
         icon: Battery, 
         status: hardware.battery.level < 20 && !hardware.battery.charging ? "warning" : "ok", 
         details: hardware.battery.status,
         currentVersion: `${hardware.battery.level}%`,
+        driverDate: "-"
+      },
+      { 
+        id: "timezone",
+        name: "Fuso Horário", 
+        icon: Clock, 
+        status: "ok", 
+        details: hardware.timezone,
+        currentVersion: "-",
         driverDate: "-"
       },
       { 
