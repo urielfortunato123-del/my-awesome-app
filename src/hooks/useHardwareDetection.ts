@@ -8,6 +8,8 @@ interface HardwareInfo {
   network: { status: string; type: string };
   battery: { status: string; level: number; charging: boolean };
   os: string;
+  isMobile: boolean;
+  deviceType: string;
 }
 
 export function useHardwareDetection() {
@@ -17,14 +19,31 @@ export function useHardwareDetection() {
   useEffect(() => {
     const detectHardware = async () => {
       try {
-        // Detect OS
-        const userAgent = navigator.userAgent;
+        // Detect OS and device type
+        const userAgent = navigator.userAgent.toLowerCase();
         let os = "Desconhecido";
-        if (userAgent.includes("Win")) os = "Windows";
-        else if (userAgent.includes("Mac")) os = "macOS";
-        else if (userAgent.includes("Linux")) os = "Linux";
-        else if (userAgent.includes("Android")) os = "Android";
-        else if (userAgent.includes("iOS")) os = "iOS";
+        let isMobile = false;
+        let deviceType = "Computador";
+        
+        if (/iphone/.test(userAgent)) {
+          os = "iOS";
+          isMobile = true;
+          deviceType = "iPhone";
+        } else if (/ipad/.test(userAgent)) {
+          os = "iPadOS";
+          isMobile = true;
+          deviceType = "iPad";
+        } else if (/android/.test(userAgent)) {
+          os = "Android";
+          isMobile = true;
+          deviceType = /mobile/.test(userAgent) ? "Smartphone" : "Tablet";
+        } else if (/win/.test(userAgent)) {
+          os = "Windows";
+        } else if (/mac/.test(userAgent)) {
+          os = "macOS";
+        } else if (/linux/.test(userAgent)) {
+          os = "Linux";
+        }
 
         // CPU info
         const cores = navigator.hardwareConcurrency || 0;
@@ -97,7 +116,9 @@ export function useHardwareDetection() {
           display: { resolution },
           network: { status: networkStatus, type: networkType },
           battery: { status: batteryStatus, level: batteryLevel, charging: batteryCharging },
-          os
+          os,
+          isMobile,
+          deviceType
         });
       } catch (error) {
         console.error("Error detecting hardware:", error);

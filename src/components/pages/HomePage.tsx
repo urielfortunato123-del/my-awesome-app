@@ -101,10 +101,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 Bem-vindo ao <span className="gradient-text">Essencial</span>
               </h2>
               <p className="text-muted-foreground max-w-xl">
-                Sistema em Ordem. Funciona em Windows, Linux e macOS.
+                Sistema em Ordem. Funciona em Windows, Linux, macOS, Android e iOS.
                 {hardware && (
                   <span className="ml-1 text-primary">
-                    • Detectado: {hardware.os}
+                    • Detectado: {hardware.os} ({hardware.deviceType})
                   </span>
                 )}
               </p>
