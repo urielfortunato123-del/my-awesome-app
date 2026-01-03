@@ -31,7 +31,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
           <img 
             src={logo} 
             alt="Essencial Logo" 
-            className="h-10 w-auto"
+            className="h-14 w-auto"
           />
         </div>
 
