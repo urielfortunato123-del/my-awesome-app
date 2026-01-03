@@ -25,42 +25,40 @@ const tabs = [
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
   return (
-    <header className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50">
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <img 
-            src={logo} 
-            alt="Essencial Logo" 
-            className="h-14 w-auto"
-          />
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex items-center gap-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`nav-item flex items-center gap-2 ${
-                activeTab === tab.id ? "active" : ""
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Status & Update */}
-        <div className="flex items-center gap-3">
+    <header className="bg-sidebar border-b border-sidebar-border sticky top-0 z-50 shrink-0">
+      {/* Top row: Logo + Status + Update */}
+      <div className="flex items-center justify-between px-3 py-2">
+        <img 
+          src={logo} 
+          alt="Essencial Logo" 
+          className="h-8 w-auto"
+        />
+        <div className="flex items-center gap-2">
           <UpdateChecker />
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 border border-success/20 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-            <span className="text-xs font-medium text-success">Sistema OK</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-success/10 border border-success/20 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            <span className="text-[10px] font-medium text-success">OK</span>
           </div>
         </div>
       </div>
+
+      {/* Navigation row */}
+      <nav className="flex items-center justify-between px-2 pb-2 gap-1 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all min-w-[48px] ${
+              activeTab === tab.id 
+                ? "bg-primary/10 text-primary" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            <span className="text-[9px] font-medium">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
     </header>
   );
 }
