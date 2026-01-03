@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { 
   RefreshCw, 
   Trash2, 
   Zap, 
   Shield, 
   Calendar, 
-  ChevronDown, 
   Wifi,
   CheckCircle,
   XCircle,
   Clock,
-  Filter
+  Filter,
+  FileText,
+  Download,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,92 +22,162 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useActivityLog, ActivityLog } from "@/contexts/ActivityLogContext";
+import { toast } from "sonner";
 
-interface ActivityLog {
-  id: string;
-  task: string;
-  type: string;
-  status: "success" | "failed";
-  time: string;
-  duration: string;
-  icon: React.ElementType;
-}
+const getIconForType = (type: ActivityLog["type"]) => {
+  switch (type) {
+    case "scan":
+      return Shield;
+    case "cleanup":
+      return Trash2;
+    case "update":
+      return RefreshCw;
+    case "protection":
+      return Shield;
+    case "benchmark":
+      return Zap;
+    case "export":
+      return FileText;
+    default:
+      return Activity;
+  }
+};
 
-const activityLogs: ActivityLog[] = [
-  { id: "1", task: "Varredura completa", type: "Manual", status: "success", time: "--:--", duration: "--", icon: Shield },
-];
+const formatDuration = (seconds?: number) => {
+  if (!seconds) return "-";
+  if (seconds < 60) return `${seconds}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}m ${secs}s`;
+};
+
+const formatBytes = (bytes?: number) => {
+  if (!bytes) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
 
 export function HistoryPage() {
+  const { logs, stats, clearLogs, getLogsByPeriod, getLogsByType } = useActivityLog();
+  const [periodFilter, setPeriodFilter] = useState("90");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  const filteredLogs = logs.filter(log => {
+    const periodDays = parseInt(periodFilter);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - periodDays);
+    
+    const inPeriod = log.timestamp >= cutoff;
+    const matchesType = typeFilter === "all" || log.type === typeFilter;
+    
+    return inPeriod && matchesType;
+  });
+
+  const handleExportLogs = () => {
+    if (logs.length === 0) {
+      toast.warning("Nenhum log para exportar");
+      return;
+    }
+
+    const logText = logs.map(log => 
+      `[${log.timestamp.toLocaleString('pt-BR')}] ${log.task} - ${log.category} - ${log.status.toUpperCase()}${log.details ? ` - ${log.details}` : ''}`
+    ).join('\n');
+
+    const blob = new Blob([logText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `essencial_historico_${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast.success("Histórico exportado!");
+  };
+
+  const handleClearLogs = () => {
+    clearLogs();
+    toast.success("Histórico limpo!");
+  };
+
   return (
-    <div className="min-h-[calc(100vh-80px)] p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-[calc(100vh-80px)] p-3 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-semibold text-foreground">Histórico de Atividades</h2>
-            <p className="text-muted-foreground">Acompanhe todas as ações realizadas no sistema</p>
+            <h2 className="text-xl md:text-2xl font-semibold text-foreground">Histórico de Atividades</h2>
+            <p className="text-sm text-muted-foreground">Acompanhe todas as ações realizadas no sistema</p>
           </div>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportLogs}>
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={handleClearLogs}>
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Limpar</span>
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                <RefreshCw className="h-6 w-6 text-primary" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                <RefreshCw className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">0</p>
-                <p className="text-sm text-muted-foreground">Atualizações instaladas</p>
+                <p className="text-xl md:text-2xl font-bold text-foreground">{stats.totalUpdates}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Atualizações</p>
               </div>
             </div>
           </div>
           
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center">
-                <Trash2 className="h-6 w-6 text-secondary" />
+          <div className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-secondary/20 flex items-center justify-center">
+                <Trash2 className="h-5 w-5 md:h-6 md:w-6 text-secondary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">0 GB</p>
-                <p className="text-sm text-muted-foreground">Espaço recuperado</p>
+                <p className="text-xl md:text-2xl font-bold text-foreground">{formatBytes(stats.totalSpaceRecovered)}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Recuperado</p>
               </div>
             </div>
           </div>
           
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-info/20 flex items-center justify-center">
-                <Zap className="h-6 w-6 text-info" />
+          <div className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-info/20 flex items-center justify-center">
+                <Zap className="h-5 w-5 md:h-6 md:w-6 text-info" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">0</p>
-                <p className="text-sm text-muted-foreground">Arquivos otimizados</p>
+                <p className="text-xl md:text-2xl font-bold text-foreground">{stats.totalFilesOptimized}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Otimizados</p>
               </div>
             </div>
           </div>
           
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
-                <Shield className="h-6 w-6 text-success" />
+          <div className="glass-card p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-success/20 flex items-center justify-center">
+                <Shield className="h-5 w-5 md:h-6 md:w-6 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">0</p>
-                <p className="text-sm text-muted-foreground">Varreduras realizadas</p>
+                <p className="text-xl md:text-2xl font-bold text-foreground">{stats.totalScans}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Varreduras</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-4">
-          <Select defaultValue="90">
-            <SelectTrigger className="w-48 bg-card border-border">
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="w-40 bg-card border-border">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
@@ -114,82 +187,92 @@ export function HistoryPage() {
             </SelectContent>
           </Select>
           
-          <Select defaultValue="all">
-            <SelectTrigger className="w-48 bg-card border-border">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-40 bg-card border-border">
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as categorias</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="scan">Varreduras</SelectItem>
               <SelectItem value="cleanup">Limpeza</SelectItem>
               <SelectItem value="update">Atualizações</SelectItem>
+              <SelectItem value="protection">Segurança</SelectItem>
+              <SelectItem value="benchmark">Benchmark</SelectItem>
             </SelectContent>
           </Select>
+
+          <span className="text-sm text-muted-foreground">
+            {filteredLogs.length} {filteredLogs.length === 1 ? "atividade" : "atividades"}
+          </span>
         </div>
 
-        {/* Activity Table */}
+        {/* Activity List */}
         <div className="glass-card overflow-hidden">
-          <div className="p-4 border-b border-border flex items-center gap-3">
+          <div className="p-3 md:p-4 border-b border-border flex items-center gap-3">
             <Calendar className="h-5 w-5 text-primary" />
             <span className="font-medium text-foreground">Atividades Recentes</span>
           </div>
 
-          {/* Table Header */}
-          <div className="grid grid-cols-[1fr,120px,120px,150px,150px,100px] gap-4 px-6 py-3 border-b border-border text-sm font-medium text-muted-foreground bg-muted/20">
-            <span>Tarefa</span>
-            <span>Tipo</span>
-            <span>Status</span>
-            <span>Hora</span>
-            <span>Duração</span>
-            <span></span>
-          </div>
-
-          {/* Empty State or Logs */}
-          {activityLogs.length === 1 && activityLogs[0].time === "--:--" ? (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                <Clock className="h-8 w-8 text-muted-foreground" />
+          {filteredLogs.length === 0 ? (
+            <div className="p-8 md:p-12 text-center">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                <Clock className="h-7 w-7 md:h-8 md:w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-medium text-foreground mb-2">Nenhuma atividade ainda</h3>
-              <p className="text-muted-foreground">
-                Execute uma varredura ou limpeza para ver o histórico aqui.
+              <h3 className="text-base md:text-lg font-medium text-foreground mb-2">Nenhuma atividade ainda</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Execute uma varredura, limpeza ou verificação de segurança para ver o histórico aqui.
               </p>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {activityLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="grid grid-cols-[1fr,120px,120px,150px,150px,100px] gap-4 px-6 py-4 items-center hover:bg-muted/20 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                      <log.icon className="h-4 w-4 text-muted-foreground" />
+              {filteredLogs.map((log) => {
+                const IconComponent = getIconForType(log.type);
+                return (
+                  <div
+                    key={log.id}
+                    className="p-3 md:p-4 flex items-center gap-3 md:gap-4 hover:bg-muted/20 transition-colors"
+                  >
+                    <div className={`w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                      log.status === "success" ? "bg-success/20" :
+                      log.status === "failed" ? "bg-destructive/20" : "bg-muted/50"
+                    }`}>
+                      <IconComponent className={`h-4 w-4 md:h-5 md:w-5 ${
+                        log.status === "success" ? "text-success" :
+                        log.status === "failed" ? "text-destructive" : "text-muted-foreground"
+                      }`} />
                     </div>
-                    <span className="font-medium text-foreground">{log.task}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-foreground text-sm md:text-base">{log.task}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          log.status === "success" ? "bg-success/20 text-success" :
+                          log.status === "failed" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"
+                        }`}>
+                          {log.status === "success" ? "Sucesso" : log.status === "failed" ? "Falha" : "Pendente"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        <span>{log.timestamp.toLocaleString('pt-BR')}</span>
+                        {log.details && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate">{log.details}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {log.status === "success" ? (
+                        <CheckCircle className="h-5 w-5 text-success" />
+                      ) : log.status === "failed" ? (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
-                  <span className="text-sm text-muted-foreground">{log.type}</span>
-                  <div className="flex items-center gap-2">
-                    {log.status === "success" ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 text-success" />
-                        <span className="text-sm text-success">Sucesso</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-4 w-4 text-destructive" />
-                        <span className="text-sm text-destructive">Falha</span>
-                      </>
-                    )}
-                  </div>
-                  <span className="text-sm text-muted-foreground">{log.time}</span>
-                  <span className="text-sm text-muted-foreground">{log.duration}</span>
-                  <Button variant="ghost" size="sm" className="text-primary gap-1">
-                    Detalhes
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
