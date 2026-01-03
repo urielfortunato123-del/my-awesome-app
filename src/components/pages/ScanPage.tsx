@@ -8,11 +8,13 @@ import {
   CheckCircle, 
   X,
   Play,
-  Pause,
-  Clock
+  Clock,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useBackup } from "@/contexts/BackupContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -38,10 +40,28 @@ interface ScanPageProps {
 export function ScanPage({ onClose }: ScanPageProps) {
   const [tasks, setTasks] = useState(initialTasks);
   const [isRunning, setIsRunning] = useState(false);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [currentTask, setCurrentTask] = useState(0);
   const [overallProgress, setOverallProgress] = useState(0);
+  const { createBackup } = useBackup();
+  const { toast } = useToast();
 
-  const startScan = () => {
+  const startScan = async () => {
+    // First, create a backup before any operation
+    setIsCreatingBackup(true);
+    toast({
+      title: "Criando ponto de restauração",
+      description: "Salvando estado atual do sistema antes da varredura...",
+    });
+    
+    await createBackup("Backup automático antes da varredura");
+    
+    toast({
+      title: "Backup criado!",
+      description: "Ponto de restauração salvo com sucesso.",
+    });
+    
+    setIsCreatingBackup(false);
     setIsRunning(true);
     setTasks(initialTasks);
     setCurrentTask(0);
@@ -112,12 +132,16 @@ export function ScanPage({ onClose }: ScanPageProps) {
                   ? 'bg-success/20' 
                   : isRunning 
                     ? 'bg-primary/20' 
-                    : 'bg-muted'
+                    : isCreatingBackup
+                      ? 'bg-warning/20'
+                      : 'bg-muted'
               }`}>
                 {overallProgress >= 100 ? (
                   <CheckCircle className="h-8 w-8 text-success" />
                 ) : isRunning ? (
                   <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+                ) : isCreatingBackup ? (
+                  <Shield className="h-8 w-8 text-warning animate-pulse" />
                 ) : (
                   <Play className="h-8 w-8 text-muted-foreground" />
                 )}
@@ -128,10 +152,15 @@ export function ScanPage({ onClose }: ScanPageProps) {
                     ? 'Varredura Concluída!' 
                     : isRunning 
                       ? 'Analisando Sistema...' 
-                      : 'Pronto para Iniciar'}
+                      : isCreatingBackup
+                        ? 'Criando Backup...'
+                        : 'Pronto para Iniciar'}
                 </h3>
                 <p className="text-muted-foreground">
-                  {completedTasks} de {tasks.length} tarefas concluídas
+                  {isCreatingBackup 
+                    ? 'Salvando ponto de restauração...'
+                    : `${completedTasks} de ${tasks.length} tarefas concluídas`
+                  }
                 </p>
               </div>
             </div>
@@ -142,14 +171,27 @@ export function ScanPage({ onClose }: ScanPageProps) {
           </div>
           <Progress value={overallProgress} className="h-3" />
           
-          {!isRunning && overallProgress < 100 && (
-            <Button 
-              onClick={startScan}
-              className="mt-6 w-full gap-2 bg-gradient-to-r from-primary to-info hover:opacity-90 text-primary-foreground"
-            >
-              <Play className="h-5 w-5" />
-              Iniciar Varredura Completa
-            </Button>
+          {!isRunning && !isCreatingBackup && overallProgress < 100 && (
+            <>
+              <div className="mt-4 p-4 bg-success/10 border border-success/20 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-success" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Backup Automático</p>
+                    <p className="text-xs text-muted-foreground">
+                      Um ponto de restauração será criado antes de iniciar a varredura.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                onClick={startScan}
+                className="mt-4 w-full gap-2 bg-gradient-to-r from-primary to-info hover:opacity-90 text-primary-foreground"
+              >
+                <Play className="h-5 w-5" />
+                Iniciar Varredura Completa
+              </Button>
+            </>
           )}
         </div>
 

@@ -56,37 +56,37 @@ export function HomePage({ onNavigate }: HomePageProps) {
       icon: Cpu, 
       label: "Processador", 
       status: "ok" as const, 
-      info: isLoading ? "Detectando..." : hardware ? `${hardware.cpu.cores} núcleos` : "Indisponível" 
+      info: isLoading ? "Detectando..." : hardware ? `${hardware.cpu.cores} núcleos` : "Aguardando" 
     },
     { 
       icon: Database, 
       label: "Memória RAM", 
       status: "ok" as const, 
-      info: isLoading ? "Detectando..." : hardware?.memory.total || "Indisponível" 
+      info: isLoading ? "Detectando..." : hardware?.memory.total || "Aguardando" 
     },
     { 
       icon: HardDrive, 
       label: "Armazenamento", 
-      status: hardware && hardware.storage.percentage > 80 ? "warning" as const : "ok" as const, 
-      info: isLoading ? "Detectando..." : hardware ? `${hardware.storage.percentage}% usado` : "Indisponível" 
+      status: "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware ? `${hardware.storage.percentage}% usado` : "Aguardando" 
     },
     { 
       icon: Monitor, 
       label: "Display", 
       status: "ok" as const, 
-      info: isLoading ? "Detectando..." : hardware?.display.resolution || "Indisponível" 
+      info: isLoading ? "Detectando..." : hardware?.display.resolution || "Aguardando" 
     },
     { 
       icon: Wifi, 
       label: "Rede", 
       status: hardware?.network.status === "Desconectado" ? "warning" as const : "ok" as const, 
-      info: isLoading ? "Detectando..." : hardware?.network.status || "Indisponível" 
+      info: isLoading ? "Detectando..." : hardware?.network.status || "Aguardando" 
     },
     { 
       icon: Battery, 
       label: "Energia", 
-      status: hardware && !hardware.battery.charging && hardware.battery.level < 20 ? "warning" as const : "ok" as const, 
-      info: isLoading ? "Detectando..." : hardware?.battery.status || "Indisponível" 
+      status: "ok" as const, 
+      info: isLoading ? "Detectando..." : hardware?.battery.status || "Aguardando" 
     },
   ];
 
@@ -185,57 +185,35 @@ export function HomePage({ onNavigate }: HomePageProps) {
             </div>
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Stats - All zeroed */}
           <div className="glass-card p-6">
             <h3 className="text-lg font-medium text-foreground mb-6">Estatísticas</h3>
             <div className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-muted-foreground">Saúde do Sistema</span>
-                  <span className="text-sm font-medium text-success">100%</span>
+                  <span className="text-sm font-medium text-muted-foreground">--</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full w-full bg-gradient-to-r from-success to-emerald-400 rounded-full" />
+                  <div className="h-full w-0 bg-gradient-to-r from-success to-emerald-400 rounded-full" />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Espaço em Disco</span>
-                  <span className={`text-sm font-medium ${
-                    hardware && hardware.storage.percentage > 80 ? 'text-warning' : 'text-info'
-                  }`}>
-                    {hardware ? `${hardware.storage.percentage}%` : '0%'}
-                  </span>
+                  <span className="text-sm text-muted-foreground">Espaço Recuperado</span>
+                  <span className="text-sm font-medium text-muted-foreground">0 GB</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full bg-gradient-to-r ${
-                      hardware && hardware.storage.percentage > 80 
-                        ? 'from-warning to-accent' 
-                        : 'from-info to-primary'
-                    } rounded-full transition-all duration-500`}
-                    style={{ width: `${hardware?.storage.percentage || 0}%` }}
-                  />
+                  <div className="h-full w-0 bg-gradient-to-r from-info to-primary rounded-full" />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Bateria</span>
-                  <span className={`text-sm font-medium ${
-                    hardware && hardware.battery.level < 20 ? 'text-warning' : 'text-success'
-                  }`}>
-                    {hardware ? `${hardware.battery.level}%` : '100%'}
-                  </span>
+                  <span className="text-sm text-muted-foreground">Arquivos Otimizados</span>
+                  <span className="text-sm font-medium text-muted-foreground">0</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full bg-gradient-to-r ${
-                      hardware && hardware.battery.level < 20 
-                        ? 'from-warning to-destructive' 
-                        : 'from-success to-emerald-400'
-                    } rounded-full transition-all duration-500`}
-                    style={{ width: `${hardware?.battery.level || 100}%` }}
-                  />
+                  <div className="h-full w-0 bg-gradient-to-r from-secondary to-purple-400 rounded-full" />
                 </div>
               </div>
               

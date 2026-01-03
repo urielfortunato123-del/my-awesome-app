@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { VirtualAssistant } from "@/components/layout/VirtualAssistant";
+import { InitialBackupModal } from "@/components/layout/InitialBackupModal";
 import { HomePage } from "@/components/pages/HomePage";
 import { HardwarePage } from "@/components/pages/HardwarePage";
 import { CleanupPage } from "@/components/pages/CleanupPage";
@@ -8,6 +9,7 @@ import { ProtectionPage } from "@/components/pages/ProtectionPage";
 import { HistoryPage } from "@/components/pages/HistoryPage";
 import { SettingsPage } from "@/components/pages/SettingsPage";
 import { ScanPage } from "@/components/pages/ScanPage";
+import { BackupProvider } from "@/contexts/BackupContext";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("inicio");
@@ -46,13 +48,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header activeTab={activeTab} onTabChange={handleNavigate} />
-      <main>
-        {renderContent()}
-      </main>
-      <VirtualAssistant />
-    </div>
+    <BackupProvider>
+      <div className="min-h-screen bg-background">
+        <InitialBackupModal />
+        <Header activeTab={activeTab} onTabChange={handleNavigate} />
+        <main>
+          {renderContent()}
+        </main>
+        <VirtualAssistant />
+      </div>
+    </BackupProvider>
   );
 };
 
