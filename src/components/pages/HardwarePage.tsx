@@ -51,13 +51,31 @@ export function HardwarePage() {
     
     const initialDrivers: DriverInfo[] = [
       { 
+        id: "device",
+        name: "Dispositivo", 
+        icon: Laptop, 
+        status: "ok", 
+        details: hardware.deviceModel,
+        currentVersion: hardware.deviceType,
+        driverDate: "-"
+      },
+      { 
         id: "os",
         name: "Sistema Operacional", 
         icon: Laptop, 
         status: "ok", 
-        details: hardware.os,
+        details: hardware.osVersion ? `${hardware.os} ${hardware.osVersion}` : hardware.os,
         currentVersion: "Atual",
         driverDate: new Date().toLocaleDateString('pt-BR')
+      },
+      { 
+        id: "browser",
+        name: "Navegador", 
+        icon: Monitor, 
+        status: "ok", 
+        details: hardware.browserVersion ? `${hardware.browser} v${hardware.browserVersion}` : hardware.browser,
+        currentVersion: hardware.browserVersion || "-",
+        driverDate: "-"
       },
       { 
         id: "cpu",
@@ -65,26 +83,26 @@ export function HardwarePage() {
         icon: Cpu, 
         status: "ok", 
         details: `${hardware.cpu.name} (${hardware.cpu.cores} núcleos)`,
-        currentVersion: "1.0.0",
-        driverDate: "01/01/2024"
+        currentVersion: `${hardware.cpu.cores} cores`,
+        driverDate: "-"
       },
       { 
         id: "memory",
         name: "Memória RAM", 
         icon: Database, 
-        status: "ok", 
-        details: hardware.memory.total !== "Desconhecido" ? hardware.memory.total : "Detectando...",
+        status: hardware.memory.total === "Não disponível" ? "warning" : "ok", 
+        details: hardware.memory.total,
         currentVersion: "-",
         driverDate: "-"
       },
       { 
         id: "gpu",
-        name: "Placa de Vídeo", 
+        name: "Tela", 
         icon: Monitor, 
         status: "ok", 
-        details: `Resolução: ${hardware.display.resolution}`,
-        currentVersion: "31.0.15.4601",
-        driverDate: "15/10/2024"
+        details: `${hardware.display.resolution} @${hardware.display.pixelRatio}x (${hardware.display.colorDepth}bit)`,
+        currentVersion: "-",
+        driverDate: "-"
       },
       { 
         id: "storage",
@@ -92,26 +110,19 @@ export function HardwarePage() {
         icon: HardDrive, 
         status: hardware.storage.percentage > 80 ? "warning" : "ok", 
         details: `${hardware.storage.used} / ${hardware.storage.total} (${hardware.storage.percentage}%)`,
-        currentVersion: "10.0.0",
-        driverDate: "20/09/2024"
-      },
-      { 
-        id: "motherboard",
-        name: "Placa-mãe", 
-        icon: CircuitBoard, 
-        status: "ok", 
-        details: hardware.deviceType,
-        currentVersion: "BIOS 1.0",
-        driverDate: "01/06/2024"
+        currentVersion: "-",
+        driverDate: "-"
       },
       { 
         id: "network",
         name: "Rede", 
         icon: Wifi, 
         status: hardware.network.status === "Conectado" ? "ok" : "warning", 
-        details: `${hardware.network.status} - ${hardware.network.type}`,
-        currentVersion: "22.180.0",
-        driverDate: "05/11/2024"
+        details: hardware.network.downlink 
+          ? `${hardware.network.status} - ${hardware.network.type} (${hardware.network.downlink} Mbps)`
+          : `${hardware.network.status} - ${hardware.network.type}`,
+        currentVersion: "-",
+        driverDate: "-"
       },
       { 
         id: "bluetooth",
@@ -119,35 +130,44 @@ export function HardwarePage() {
         icon: Bluetooth, 
         status: "ok", 
         details: "Disponível",
-        currentVersion: "22.180.0",
-        driverDate: "05/11/2024"
+        currentVersion: "-",
+        driverDate: "-"
       },
       { 
         id: "usb",
-        name: "USB Controllers", 
+        name: "USB", 
         icon: Usb, 
         status: "ok", 
         details: "Funcionando",
-        currentVersion: "10.0.22621",
-        driverDate: "21/06/2024"
+        currentVersion: "-",
+        driverDate: "-"
       },
       { 
         id: "audio",
         name: "Áudio", 
         icon: Microchip, 
         status: "ok", 
-        details: "Dispositivo de áudio padrão",
-        currentVersion: "6.0.9391.1",
-        driverDate: "18/08/2024"
+        details: "Dispositivo de áudio",
+        currentVersion: "-",
+        driverDate: "-"
       },
       { 
         id: "power",
         name: "Energia", 
         icon: Battery, 
-        status: "ok", 
+        status: hardware.battery.level < 20 && !hardware.battery.charging ? "warning" : "ok", 
         details: hardware.battery.status,
-        currentVersion: "10.0.22621",
-        driverDate: "21/06/2024"
+        currentVersion: `${hardware.battery.level}%`,
+        driverDate: "-"
+      },
+      { 
+        id: "language",
+        name: "Idioma", 
+        icon: Laptop, 
+        status: "ok", 
+        details: hardware.language,
+        currentVersion: "-",
+        driverDate: "-"
       },
     ];
     
