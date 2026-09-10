@@ -1,4 +1,4 @@
-name: Build Bateria IA Beta02 APK
+name: Build Bateria IA Beta02.1 APK
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - bateria-ia-beta02
     paths:
       - 'bateria-v2-patch/**'
+      - 'bateria-v2-fix/**'
       - '.github/workflows/bateria-ia-beta02.yml'
   workflow_dispatch:
 
@@ -32,6 +33,15 @@ jobs:
           echo "99e7d5138d912b695bfc1d15f2c667e7da411a37d89035b80371072c6ea28dd1  bateria-v2-patch/BateriaIA_beta02_patch.zip" | sha256sum -c -
           unzip -oq bateria-v2-patch/BateriaIA_beta02_patch.zip -d bateria-build/source/BateriaIA_beta01
 
+      - name: Apply Beta02.1 system bars fix
+        shell: bash
+        run: |
+          cat bateria-v2-fix/part_* > bateria-v2-fix/fix.zip.b64
+          base64 -d bateria-v2-fix/fix.zip.b64 > bateria-v2-fix/BateriaIA_beta02_1_patch.zip
+          echo "3434f6a6c8da429c523d3863728b6e3b7ab9e66867537d8861c1c08cb942b8b3  bateria-v2-fix/BateriaIA_beta02_1_patch.zip" | sha256sum -c -
+          unzip -oq bateria-v2-fix/BateriaIA_beta02_1_patch.zip -d bateria-build/source/BateriaIA_beta01
+          cp -rf bateria-build/source/BateriaIA_beta01/BateriaIA_beta02_1_patch/app/* bateria-build/source/BateriaIA_beta01/app/
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -46,24 +56,24 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build Beta02 debug APK
+      - name: Build release APK
         working-directory: bateria-build/source/BateriaIA_beta01
-        run: gradle :app:assembleDebug --stacktrace
+        run: gradle :app:assembleRelease --stacktrace
 
-      - name: Verify APK
+      - name: Collect unsigned APK and signing tool
         shell: bash
         run: |
-          APK=$(find bateria-build/source/BateriaIA_beta01/app/build/outputs/apk/debug -name '*.apk' -print -quit)
+          APK=$(find bateria-build/source/BateriaIA_beta01/app/build/outputs/apk/release -name '*unsigned*.apk' -print -quit)
           test -n "$APK"
-          cp "$APK" bateria-build/BateriaIA_beta02.apk
-          sha256sum bateria-build/BateriaIA_beta02.apk > bateria-build/BateriaIA_beta02.apk.sha256
-          unzip -t bateria-build/BateriaIA_beta02.apk >/dev/null
-          ls -lh bateria-build/BateriaIA_beta02.apk
+          cp "$APK" bateria-build/BateriaIA_beta02_1-unsigned.apk
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" bateria-build/apksigner.jar
+          unzip -t bateria-build/BateriaIA_beta02_1-unsigned.apk >/dev/null
+          ls -lh bateria-build/BateriaIA_beta02_1-unsigned.apk bateria-build/apksigner.jar
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BateriaIA-beta02-APK
+          name: BateriaIA-beta02-1-UNSIGNED
           path: |
-            bateria-build/BateriaIA_beta02.apk
-            bateria-build/BateriaIA_beta02.apk.sha256
+            bateria-build/BateriaIA_beta02_1-unsigned.apk
+            bateria-build/apksigner.jar
           if-no-files-found: error
