@@ -1,0 +1,61 @@
+name: Build Bateria IA APK
+
+on:
+  push:
+    branches:
+      - bateria-ia-build
+    paths:
+      - 'bateria-build/**'
+      - '.github/workflows/bateria-ia-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore source archive
+        shell: bash
+        run: |
+          cat bateria-build/part_* > bateria-build/source.zip.b64
+          base64 -d bateria-build/source.zip.b64 > bateria-build/BateriaIA_beta01_source.zip
+          echo "ad2ec69afae4d320e849a5249f60f34f1a97733a3aaa0dd8157cbf83841ae52e  bateria-build/BateriaIA_beta01_source.zip" | sha256sum -c -
+          mkdir -p bateria-build/source
+          unzip -q bateria-build/BateriaIA_beta01_source.zip -d bateria-build/source
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build debug APK
+        working-directory: bateria-build/source/BateriaIA_beta01
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          APK=$(find bateria-build/source/BateriaIA_beta01/app/build/outputs/apk/debug -name '*.apk' -print -quit)
+          test -n "$APK"
+          cp "$APK" bateria-build/BateriaIA_beta01-beta01-debug.apk
+          sha256sum bateria-build/BateriaIA_beta01-beta01-debug.apk > bateria-build/BateriaIA_beta01-beta01-debug.apk.sha256
+          unzip -t bateria-build/BateriaIA_beta01-beta01-debug.apk >/dev/null
+          ls -lh bateria-build/BateriaIA_beta01-beta01-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BateriaIA-beta01-APK
+          path: |
+            bateria-build/BateriaIA_beta01-beta01-debug.apk
+            bateria-build/BateriaIA_beta01-beta01-debug.apk.sha256
+          if-no-files-found: error
