@@ -1,4 +1,4 @@
-name: Build Bateria IA Beta02.1 APK
+name: Build Bateria IA Beta02.2 APK
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     paths:
       - 'bateria-v2-patch/**'
       - 'bateria-v2-fix/**'
+      - 'bateria-v22-patch/**'
       - '.github/workflows/bateria-ia-beta02.yml'
   workflow_dispatch:
 
@@ -42,6 +43,19 @@ jobs:
           unzip -oq bateria-v2-fix/BateriaIA_beta02_1_patch.zip -d bateria-build/source/BateriaIA_beta01
           cp -rf bateria-build/source/BateriaIA_beta01/BateriaIA_beta02_1_patch/app/* bateria-build/source/BateriaIA_beta01/app/
 
+      - name: Apply Beta02.2 intelligence patch
+        shell: bash
+        run: |
+          cat bateria-v22-patch/part_* > bateria-v22-patch/patch.zip.b64
+          base64 -d bateria-v22-patch/patch.zip.b64 > bateria-v22-patch/BateriaIA_beta02_2_patch.zip
+          echo "8169f36dddb5b293e9232e432a9b77cdb5bea554d4c8fbdc746e8462d3179077  bateria-v22-patch/BateriaIA_beta02_2_patch.zip" | sha256sum -c -
+          rm -rf bateria-v22-patch/extracted
+          mkdir -p bateria-v22-patch/extracted
+          unzip -q bateria-v22-patch/BateriaIA_beta02_2_patch.zip -d bateria-v22-patch/extracted
+          cp -rf bateria-v22-patch/extracted/BateriaIA_beta02_2_patch/app/* bateria-build/source/BateriaIA_beta01/app/
+          grep -q "versionCode 4" bateria-build/source/BateriaIA_beta01/app/build.gradle
+          grep -q "0.2.2-beta02.2" bateria-build/source/BateriaIA_beta01/app/build.gradle
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -65,15 +79,15 @@ jobs:
         run: |
           APK=$(find bateria-build/source/BateriaIA_beta01/app/build/outputs/apk/release -name '*unsigned*.apk' -print -quit)
           test -n "$APK"
-          cp "$APK" bateria-build/BateriaIA_beta02_1-unsigned.apk
+          cp "$APK" bateria-build/BateriaIA_beta02_2-unsigned.apk
           cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" bateria-build/apksigner.jar
-          unzip -t bateria-build/BateriaIA_beta02_1-unsigned.apk >/dev/null
-          ls -lh bateria-build/BateriaIA_beta02_1-unsigned.apk bateria-build/apksigner.jar
+          unzip -t bateria-build/BateriaIA_beta02_2-unsigned.apk >/dev/null
+          ls -lh bateria-build/BateriaIA_beta02_2-unsigned.apk bateria-build/apksigner.jar
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BateriaIA-beta02-1-UNSIGNED
+          name: BateriaIA-beta02-2-UNSIGNED
           path: |
-            bateria-build/BateriaIA_beta02_1-unsigned.apk
+            bateria-build/BateriaIA_beta02_2-unsigned.apk
             bateria-build/apksigner.jar
           if-no-files-found: error
