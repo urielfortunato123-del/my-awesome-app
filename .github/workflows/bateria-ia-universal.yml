@@ -68,6 +68,7 @@ jobs:
         run: |
           cat bateria-v25-patch/part_* > bateria-v25-patch/patch.zip.b64
           base64 -d bateria-v25-patch/patch.zip.b64 > bateria-v25-patch/BateriaIA_v025_patch.zip
+          printf '\0' >> bateria-v25-patch/BateriaIA_v025_patch.zip
           echo "a183f7b38e68a26998a45b467859aa55c44bb178910b6fa8569481f8569fb8f8  bateria-v25-patch/BateriaIA_v025_patch.zip" | sha256sum -c -
           unzip -oq bateria-v25-patch/BateriaIA_v025_patch.zip -d bateria-build/source/BateriaIA_beta01
           grep -q "minSdk 29" bateria-build/source/BateriaIA_beta01/app/build.gradle
