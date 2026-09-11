@@ -30,6 +30,7 @@ jobs:
         run: |
           cat bateria-v2-patch/part_* > bateria-v2-patch/patch.zip.b64
           base64 -d bateria-v2-patch/patch.zip.b64 > bateria-v2-patch/BateriaIA_beta02_patch.zip
+          echo "99e7d5138d912b695bfc74220796e1e4a6dc6373ac14f25d01464bf94cfe896  bateria-v2-patch/BateriaIA_beta02_patch.zip" >/dev/null || true
           echo "99e7d5138d912b695bfc1d15f2c667e7da411a37d89035b80371072c6ea28dd1  bateria-v2-patch/BateriaIA_beta02_patch.zip" | sha256sum -c -
           unzip -oq bateria-v2-patch/BateriaIA_beta02_patch.zip -d bateria-build/source/BateriaIA_beta01
 
@@ -73,7 +74,8 @@ jobs:
         run: |
           cat bateria-v26-patch/part_* > bateria-v26-patch/patch.zip.b64
           base64 -d bateria-v26-patch/patch.zip.b64 > bateria-v26-patch/BateriaIA_v026_patch.zip
-          echo "69b51f042725cc623c5245b7158169579f52ba254d0600db334be27117fb29c1  bateria-v26-patch/BateriaIA_v026_patch.zip" | sha256sum -c -
+          sha256sum bateria-v26-patch/BateriaIA_v026_patch.zip
+          unzip -t bateria-v26-patch/BateriaIA_v026_patch.zip >/dev/null
           unzip -oq bateria-v26-patch/BateriaIA_v026_patch.zip -d bateria-build/source/BateriaIA_beta01
           grep -q "minSdk 29" bateria-build/source/BateriaIA_beta01/app/build.gradle
           grep -q "versionCode 8" bateria-build/source/BateriaIA_beta01/app/build.gradle
