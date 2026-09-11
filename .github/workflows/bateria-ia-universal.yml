@@ -1,11 +1,11 @@
-name: Build Bateria IA Universal 0.2.5
+name: Build Bateria IA Universal 0.2.6
 
 on:
   push:
     branches:
-      - bateria-ia-universal025
+      - bateria-ia-universal026
     paths:
-      - 'bateria-v25-patch/**'
+      - 'bateria-v26-patch/**'
       - '.github/workflows/bateria-ia-universal.yml'
   workflow_dispatch:
 
@@ -54,14 +54,10 @@ jobs:
           cp -rf bateria-v22-patch/extracted/BateriaIA_beta02_2_patch/app/* bateria-build/source/BateriaIA_beta01/app/
 
       - name: Apply Beta02.3 MOVA identity
-        shell: bash
-        run: |
-          python3 bateria-v23-patch/apply.py
+        run: python3 bateria-v23-patch/apply.py
 
       - name: Apply Universal 0.2.4 privacy and compatibility
-        shell: bash
-        run: |
-          python3 bateria-v24-universal/apply.py
+        run: python3 bateria-v24-universal/apply.py
 
       - name: Apply Universal 0.2.5 adaptive action pilot
         shell: bash
@@ -71,15 +67,24 @@ jobs:
           printf '\0' >> bateria-v25-patch/BateriaIA_v025_patch.zip
           echo "a183f7b38e68a26998a45b467859aa55c44bb178910b6fa8569481f8569fb8f8  bateria-v25-patch/BateriaIA_v025_patch.zip" | sha256sum -c -
           unzip -oq bateria-v25-patch/BateriaIA_v025_patch.zip -d bateria-build/source/BateriaIA_beta01
+
+      - name: Apply Universal 0.2.6 battery health lab
+        shell: bash
+        run: |
+          cat bateria-v26-patch/part_* > bateria-v26-patch/patch.zip.b64
+          base64 -d bateria-v26-patch/patch.zip.b64 > bateria-v26-patch/BateriaIA_v026_patch.zip
+          echo "69b51f042725cc623c5245b7158169579f52ba254d0600db334be27117fb29c1  bateria-v26-patch/BateriaIA_v026_patch.zip" | sha256sum -c -
+          unzip -oq bateria-v26-patch/BateriaIA_v026_patch.zip -d bateria-build/source/BateriaIA_beta01
           grep -q "minSdk 29" bateria-build/source/BateriaIA_beta01/app/build.gradle
-          grep -q "versionCode 7" bateria-build/source/BateriaIA_beta01/app/build.gradle
-          grep -q "0.2.5-universal" bateria-build/source/BateriaIA_beta01/app/build.gradle
+          grep -q "versionCode 8" bateria-build/source/BateriaIA_beta01/app/build.gradle
+          grep -q "0.2.6-universal" bateria-build/source/BateriaIA_beta01/app/build.gradle
           grep -q "minifyEnabled true" bateria-build/source/BateriaIA_beta01/app/build.gradle
           grep -q 'allowBackup="false"' bateria-build/source/BateriaIA_beta01/app/src/main/AndroidManifest.xml
-          grep -q 'android.permission.WRITE_SETTINGS' bateria-build/source/BateriaIA_beta01/app/src/main/AndroidManifest.xml
           ! grep -q 'android.permission.INTERNET' bateria-build/source/BateriaIA_beta01/app/src/main/AndroidManifest.xml
-          grep -q 'PILOTO IA' bateria-build/source/BateriaIA_beta01/app/src/main/res/layout/activity_main.xml
-          grep -q 'DeviceActionAdvisor' bateria-build/source/BateriaIA_beta01/app/src/main/java/com/bateriaia/app/MainActivity.java
+          grep -q 'BatterySessionAnalyzer' bateria-build/source/BateriaIA_beta01/app/src/main/java/com/bateriaia/app/MainActivity.java
+          grep -q 'SleepTracker' bateria-build/source/BateriaIA_beta01/app/src/main/java/com/bateriaia/app/MainActivity.java
+          grep -q 'Saúde medida' bateria-build/source/BateriaIA_beta01/app/src/main/res/layout/activity_main.xml
+          grep -q 'Laboratório de carga' bateria-build/source/BateriaIA_beta01/app/src/main/res/layout/activity_main.xml
           grep -q 'MOVA Tecnologia e Mobilidade Ltda.' bateria-build/source/BateriaIA_beta01/app/src/main/java/com/bateriaia/app/MainActivity.java
 
       - uses: actions/setup-java@v4
@@ -108,25 +113,24 @@ jobs:
         run: |
           APK=$(find bateria-build/source/BateriaIA_beta01/app/build/outputs/apk/release -name '*unsigned*.apk' -print -quit)
           test -n "$APK"
-          cp "$APK" bateria-build/BateriaIA_Universal_0.2.5-unsigned.apk
+          cp "$APK" bateria-build/BateriaIA_Universal_0.2.6-unsigned.apk
           cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" bateria-build/apksigner.jar
-          unzip -t bateria-build/BateriaIA_Universal_0.2.5-unsigned.apk >/dev/null
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging bateria-build/BateriaIA_Universal_0.2.5-unsigned.apk | tee bateria-build/badging.txt
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions bateria-build/BateriaIA_Universal_0.2.5-unsigned.apk | tee bateria-build/permissions.txt
+          unzip -t bateria-build/BateriaIA_Universal_0.2.6-unsigned.apk >/dev/null
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging bateria-build/BateriaIA_Universal_0.2.6-unsigned.apk | tee bateria-build/badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions bateria-build/BateriaIA_Universal_0.2.6-unsigned.apk | tee bateria-build/permissions.txt
           grep -q "sdkVersion:'29'" bateria-build/badging.txt
-          grep -q "versionCode='7'" bateria-build/badging.txt
-          grep -q "versionName='0.2.5-universal'" bateria-build/badging.txt
-          grep -q 'android.permission.WRITE_SETTINGS' bateria-build/permissions.txt
+          grep -q "versionCode='8'" bateria-build/badging.txt
+          grep -q "versionName='0.2.6-universal'" bateria-build/badging.txt
           ! grep -q 'android.permission.INTERNET' bateria-build/permissions.txt
           test -s bateria-build/source/BateriaIA_beta01/app/build/outputs/mapping/release/mapping.txt
           cp bateria-build/source/BateriaIA_beta01/app/build/outputs/mapping/release/mapping.txt bateria-build/mapping-release.txt
-          ls -lh bateria-build/BateriaIA_Universal_0.2.5-unsigned.apk bateria-build/mapping-release.txt
+          ls -lh bateria-build/BateriaIA_Universal_0.2.6-unsigned.apk bateria-build/mapping-release.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BateriaIA-Universal-0.2.5-UNSIGNED
+          name: BateriaIA-Universal-0.2.6-UNSIGNED
           path: |
-            bateria-build/BateriaIA_Universal_0.2.5-unsigned.apk
+            bateria-build/BateriaIA_Universal_0.2.6-unsigned.apk
             bateria-build/apksigner.jar
             bateria-build/badging.txt
             bateria-build/permissions.txt
