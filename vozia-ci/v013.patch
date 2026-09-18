@@ -1,0 +1,387 @@
+diff -ruN VoziaTranslate_v0.1.2/app/build.gradle.kts VoziaTranslate_v0.1.3/app/build.gradle.kts
+--- VoziaTranslate_v0.1.2/app/build.gradle.kts	2026-09-18 13:28:59.784661901 +0000
++++ VoziaTranslate_v0.1.3/app/build.gradle.kts	2026-09-18 13:50:12.435049388 +0000
+@@ -10,8 +10,8 @@
+         applicationId = "com.vozia.translate"
+         minSdk = 29
+         targetSdk = 36
+-        versionCode = 3
+-        versionName = "0.1.2"
++        versionCode = 4
++        versionName = "0.1.3"
+     }
+ 
+     buildTypes {
+diff -ruN VoziaTranslate_v0.1.2/app/src/main/java/com/vozia/translate/Diagnostics.kt VoziaTranslate_v0.1.3/app/src/main/java/com/vozia/translate/Diagnostics.kt
+--- VoziaTranslate_v0.1.2/app/src/main/java/com/vozia/translate/Diagnostics.kt	1970-01-01 00:00:00.000000000 +0000
++++ VoziaTranslate_v0.1.3/app/src/main/java/com/vozia/translate/Diagnostics.kt	2026-09-18 13:50:11.674595745 +0000
+@@ -0,0 +1,109 @@
++package com.vozia.translate
++
++import android.content.Context
++import android.os.Build
++import android.util.Log
++import java.io.PrintWriter
++import java.io.StringWriter
++import java.text.SimpleDateFormat
++import java.util.Date
++import java.util.Locale
++
++object Diagnostics {
++    private const val PREFS = "vozia_diagnostics"
++    private const val KEY_STAGE = "last_stage"
++    private const val KEY_STAGE_TIME = "last_stage_time"
++    private const val KEY_CRASH = "last_crash"
++    private const val KEY_CRASH_TIME = "last_crash_time"
++    private const val KEY_CLEAN_STOP = "clean_stop"
++
++    fun install(context: Context) {
++        val app = context.applicationContext
++        val previous = Thread.getDefaultUncaughtExceptionHandler()
++        if (previous is VoziaCrashHandler) return
++        Thread.setDefaultUncaughtExceptionHandler(VoziaCrashHandler(app, previous))
++    }
++
++    fun mark(context: Context, stage: String) {
++        Log.i("VoziaDiag", stage)
++        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++            .edit()
++            .putString(KEY_STAGE, stage)
++            .putLong(KEY_STAGE_TIME, System.currentTimeMillis())
++            .putBoolean(KEY_CLEAN_STOP, false)
++            .apply()
++    }
++
++    fun cleanStop(context: Context, stage: String = "stopped_cleanly") {
++        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++            .edit()
++            .putString(KEY_STAGE, stage)
++            .putLong(KEY_STAGE_TIME, System.currentTimeMillis())
++            .putBoolean(KEY_CLEAN_STOP, true)
++            .apply()
++    }
++
++    fun record(context: Context, label: String, error: Throwable) {
++        val sw = StringWriter()
++        error.printStackTrace(PrintWriter(sw))
++        val report = buildString {
++            append(label).append('\n')
++            append(error.javaClass.name).append(": ").append(error.message ?: "sem mensagem").append('\n')
++            append(sw.toString().take(4500))
++        }
++        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++            .edit()
++            .putString(KEY_CRASH, report)
++            .putLong(KEY_CRASH_TIME, System.currentTimeMillis())
++            .putBoolean(KEY_CLEAN_STOP, false)
++            .apply()
++        Log.e("VoziaDiag", label, error)
++    }
++
++    fun clearCrash(context: Context) {
++        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++            .edit()
++            .remove(KEY_CRASH)
++            .remove(KEY_CRASH_TIME)
++            .apply()
++    }
++
++    fun report(context: Context): String {
++        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++        val stage = p.getString(KEY_STAGE, "nenhuma") ?: "nenhuma"
++        val stageTime = p.getLong(KEY_STAGE_TIME, 0L)
++        val crash = p.getString(KEY_CRASH, null)
++        val crashTime = p.getLong(KEY_CRASH_TIME, 0L)
++        val clean = p.getBoolean(KEY_CLEAN_STOP, true)
++        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
++        return buildString {
++            append("Vozia 0.1.3 diagnostico\n")
++            append("Aparelho: ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL).append('\n')
++            append("Android: ").append(Build.VERSION.RELEASE).append(" (API ").append(Build.VERSION.SDK_INT).append(")\n")
++            append("Ultima etapa: ").append(stage)
++            if (stageTime > 0) append(" @ ").append(fmt.format(Date(stageTime)))
++            append('\n')
++            append("Encerramento limpo: ").append(clean).append('\n')
++            if (crash != null) {
++                append("Falha capturada")
++                if (crashTime > 0) append(" @ ").append(fmt.format(Date(crashTime)))
++                append(":\n").append(crash)
++            } else {
++                append("Falha Java/Kotlin capturada: nenhuma\n")
++                append("Se o sistema fechou o app mesmo assim, a ultima etapa acima ajuda a localizar falha nativa/Samsung/servico de voz.")
++            }
++        }
++    }
++
++    private class VoziaCrashHandler(
++        private val context: Context,
++        private val previous: Thread.UncaughtExceptionHandler?
++    ) : Thread.UncaughtExceptionHandler {
++        override fun uncaughtException(thread: Thread, throwable: Throwable) {
++            try {
++                record(context, "FATAL thread=${thread.name}", throwable)
++            } catch (_: Throwable) { }
++            previous?.uncaughtException(thread, throwable)
++        }
++    }
++}
+diff -ruN VoziaTranslate_v0.1.2/app/src/main/java/com/vozia/translate/MainActivity.kt VoziaTranslate_v0.1.3/app/src/main/java/com/vozia/translate/MainActivity.kt
+--- VoziaTranslate_v0.1.2/app/src/main/java/com/vozia/translate/MainActivity.kt	2026-09-18 10:08:00.000000000 +0000
++++ VoziaTranslate_v0.1.3/app/src/main/java/com/vozia/translate/MainActivity.kt	2026-09-18 13:50:12.435423251 +0000
+@@ -2,6 +2,8 @@
+ 
+ import android.Manifest
+ import android.app.Activity
++import android.content.ClipData
++import android.content.ClipboardManager
+ import android.content.Context
+ import android.content.Intent
+ import android.content.pm.PackageManager
+@@ -63,6 +65,8 @@
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
++        Diagnostics.install(this)
++        Diagnostics.mark(this, "activity_onCreate")
+         setContentView(R.layout.activity_main)
+ 
+         sourceSpinner = findViewById(R.id.sourceSpinner)
+@@ -73,6 +77,14 @@
+         val compatText: TextView = findViewById(R.id.compatText)
+         val startButton: Button = findViewById(R.id.startButton)
+         val stopButton: Button = findViewById(R.id.stopButton)
++        val diagnosticButton: Button = findViewById(R.id.diagnosticButton)
++
++        diagnosticButton.setOnClickListener {
++            val report = Diagnostics.report(this)
++            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
++            clipboard.setPrimaryClip(ClipData.newPlainText("Vozia diagnóstico", report))
++            Toast.makeText(this, "Diagnóstico copiado. Cole aqui no ChatGPT.", Toast.LENGTH_LONG).show()
++        }
+ 
+         sourceSpinner.adapter = ArrayAdapter(
+             this,
+@@ -101,9 +113,7 @@
+         )
+         speedSpinner.setSelection(2)
+ 
+-        if (Build.VERSION.SDK_INT < 34) {
+-            sourceSpinner.setSelection(2)
+-        }
++        sourceSpinner.setSelection(2)
+ 
+         compatText.text = when {
+             Build.VERSION.SDK_INT >= 34 -> "Modo completo: áudio interno + detecção automática. O modo Áudio não ocupa a tela com legendas."
+@@ -111,6 +121,11 @@
+             else -> "Android 10–12: modo compatibilidade pelo microfone/alto-falante. Com fones, o vídeo pode não ser reconhecido."
+         }
+ 
++        val previousReport = Diagnostics.report(this)
++        if (previousReport.contains("Falha capturada") || previousReport.contains("Encerramento limpo: false")) {
++            statusText.text = "O Vozia detectou uma sessão interrompida. Toque em COPIAR DIAGNÓSTICO e me envie o texto."
++        }
++
+         startButton.setOnClickListener { beginStartFlow() }
+         stopButton.setOnClickListener {
+             val intent = Intent(this, TranslatorService::class.java).apply {
+@@ -122,6 +137,8 @@
+     }
+ 
+     private fun beginStartFlow() {
++        Diagnostics.clearCrash(this)
++        Diagnostics.mark(this, "start_flow")
+         val source = LanguageCatalog.sourceLanguages[sourceSpinner.selectedItemPosition]
+         if (source.speechTag == "auto" && Build.VERSION.SDK_INT < 34) {
+             statusText.text = "Neste Android, selecione o idioma de origem para reconhecer a fala com precisão."
+@@ -182,6 +199,7 @@
+             putExtra(TranslatorService.EXTRA_PROJECTION_RESULT_CODE, resultCode)
+             projectionData?.let { putExtra(TranslatorService.EXTRA_PROJECTION_DATA, it) }
+         }
++        Diagnostics.mark(this, "request_start_foreground_service")
+         ContextCompat.startForegroundService(this, intent)
+         statusText.text = if (mode == TranslatorService.MODE_AUDIO) {
+             "Tradução por voz ativa. Agora abra o vídeo."
+diff -ruN VoziaTranslate_v0.1.2/app/src/main/java/com/vozia/translate/TranslatorService.kt VoziaTranslate_v0.1.3/app/src/main/java/com/vozia/translate/TranslatorService.kt
+--- VoziaTranslate_v0.1.2/app/src/main/java/com/vozia/translate/TranslatorService.kt	2026-09-18 13:30:24.205666933 +0000
++++ VoziaTranslate_v0.1.3/app/src/main/java/com/vozia/translate/TranslatorService.kt	2026-09-18 13:50:13.436233175 +0000
+@@ -87,6 +87,8 @@
+ 
+     override fun onCreate() {
+         super.onCreate()
++        Diagnostics.install(this)
++        Diagnostics.mark(this, "service_onCreate")
+         createNotificationChannel()
+         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+@@ -107,9 +109,12 @@
+                     targetTag = intent.getStringExtra(EXTRA_TARGET_TAG) ?: "pt-BR"
+                     outputMode = intent.getStringExtra(EXTRA_OUTPUT_MODE) ?: MODE_AUDIO
+                     speechRate = intent.getFloatExtra(EXTRA_SPEECH_RATE, 1.05f).coerceIn(0.8f, 1.35f)
++                    Diagnostics.mark(this, "service_start_received")
+                     configureTts()
+ 
++                    Diagnostics.mark(this, "before_start_foreground")
+                     startAsForeground()
++                    Diagnostics.mark(this, "foreground_started")
+                     if (outputMode != MODE_AUDIO) showOverlay("Ouvindo…")
+ 
+                     if (Build.VERSION.SDK_INT >= 33) {
+@@ -120,6 +125,7 @@
+                             stopEverything()
+                             return START_NOT_STICKY
+                         }
++                        Diagnostics.mark(this, "before_playback_capture")
+                         startPlaybackCapture(resultCode, projectionData)
+                     } else {
+                         startLegacyMicrophoneRecognition()
+@@ -216,6 +222,7 @@
+         runCatching {
+             startPlaybackCaptureInternal(resultCode, data)
+         }.onFailure {
++            Diagnostics.record(this, "playback_capture_failure", it)
+             publishStatus("Captura incompatível: ${it.javaClass.simpleName}")
+             stopEverything()
+         }
+@@ -228,7 +235,9 @@
+         }
+ 
+         val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
++        Diagnostics.mark(this, "get_media_projection")
+         mediaProjection = manager.getMediaProjection(resultCode, data)
++        Diagnostics.mark(this, "media_projection_created")
+         mediaProjection?.registerCallback(object : MediaProjection.Callback() {
+             override fun onStop() {
+                 if (!stopping.get()) {
+@@ -252,6 +261,7 @@
+         captureBuilder.excludeUid(applicationInfo.uid)
+ 
+         val config = captureBuilder.build()
++        Diagnostics.mark(this, "playback_capture_config_built")
+ 
+         val audioFormat = AudioFormat.Builder()
+             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+@@ -265,11 +275,13 @@
+             AudioFormat.ENCODING_PCM_16BIT
+         ).coerceAtLeast(16_000)
+ 
++        Diagnostics.mark(this, "before_audio_record_build")
+         audioRecord = AudioRecord.Builder()
+             .setAudioFormat(audioFormat)
+             .setBufferSizeInBytes(minBuffer * 2)
+             .setAudioPlaybackCaptureConfig(config)
+             .build()
++        Diagnostics.mark(this, "audio_record_built")
+ 
+         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+             publishStatus("Captura de áudio indisponível neste app/aparelho")
+@@ -281,7 +293,9 @@
+         pipeRead = pipe[0]
+         pipeWrite = pipe[1]
+ 
++        Diagnostics.mark(this, "pipe_created")
+         startSpeechRecognizerWithInjectedAudio(pipeRead!!)
++        Diagnostics.mark(this, "speech_recognizer_requested")
+         startAudioPump(minBuffer)
+     }
+ 
+@@ -292,6 +306,7 @@
+         }
+ 
+         speechRecognizer?.destroy()
++        Diagnostics.mark(this, "before_speech_recognizer_create")
+         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).also {
+             it.setRecognitionListener(this)
+         }
+@@ -325,8 +340,11 @@
+         }
+ 
+         runCatching {
++            Diagnostics.mark(this, "before_start_listening_injected")
+             speechRecognizer?.startListening(recognizerIntent)
++            Diagnostics.mark(this, "start_listening_injected_returned")
+         }.onFailure {
++            Diagnostics.record(this, "start_listening_failure", it)
+             publishStatus("Reconhecedor não aceitou o áudio")
+             stopEverything()
+         }
+@@ -337,8 +355,11 @@
+         val writeFd = pipeWrite ?: return
+         capturing.set(true)
+         val started = runCatching {
++            Diagnostics.mark(this, "before_audio_record_start")
+             record.startRecording()
+-            record.recordingState == AudioRecord.RECORDSTATE_RECORDING
++            val ok = record.recordingState == AudioRecord.RECORDSTATE_RECORDING
++            if (ok) Diagnostics.mark(this, "audio_record_started")
++            ok
+         }.getOrDefault(false)
+ 
+         if (!started) {
+@@ -362,7 +383,10 @@
+                 }
+             } catch (_: Throwable) {
+                 if (capturing.get()) {
+-                    mainHandler.post { publishStatus("Áudio interrompido") }
++                    mainHandler.post {
++                        Diagnostics.mark(this@TranslatorService, "audio_pump_interrupted")
++                        publishStatus("Áudio interrompido")
++                    }
+                 }
+             }
+         }
+@@ -379,6 +403,7 @@
+         }
+ 
+         speechRecognizer?.destroy()
++        Diagnostics.mark(this, "before_speech_recognizer_create")
+         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).also {
+             it.setRecognitionListener(this)
+         }
+@@ -417,6 +442,7 @@
+             else -> null
+         }
+ 
++        Diagnostics.mark(this, "translate_request")
+         runCatching {
+             translator.translate(
+             text = clean,
+@@ -481,7 +507,10 @@
+             lastSpokenAt = SystemClock.elapsedRealtime()
+ 
+             val id = "vozia-${UUID.randomUUID()}"
+-            val result = tts?.speak(next, TextToSpeech.QUEUE_FLUSH, null, id) ?: TextToSpeech.ERROR
++            Diagnostics.mark(this, "tts_speak")
++            val result = runCatching { tts?.speak(next, TextToSpeech.QUEUE_FLUSH, null, id) ?: TextToSpeech.ERROR }
++                .onFailure { Diagnostics.record(this@TranslatorService, "tts_speak_failure", it) }
++                .getOrDefault(TextToSpeech.ERROR)
+             if (result == TextToSpeech.ERROR) {
+                 speakingTranslation = false
+                 abandonDuckFocus()
+@@ -696,7 +725,8 @@
+         }
+         overlay = null
+ 
+-        translator.close()
++        runCatching { translator.close() }.onFailure { Diagnostics.record(this, "translator_close_failure", it) }
++        Diagnostics.cleanStop(this)
+         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+         stopSelf()
+     }
+diff -ruN VoziaTranslate_v0.1.2/app/src/main/res/layout/activity_main.xml VoziaTranslate_v0.1.3/app/src/main/res/layout/activity_main.xml
+--- VoziaTranslate_v0.1.2/app/src/main/res/layout/activity_main.xml	2026-09-18 10:08:00.000000000 +0000
++++ VoziaTranslate_v0.1.3/app/src/main/res/layout/activity_main.xml	2026-09-18 13:50:12.435278039 +0000
+@@ -112,6 +112,14 @@
+             android:textColor="@color/vozia_muted"
+             android:textSize="14sp" />
+ 
++        <com.google.android.material.button.MaterialButton
++            android:id="@+id/diagnosticButton"
++            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
++            android:layout_width="match_parent"
++            android:layout_height="50dp"
++            android:layout_marginTop="14dp"
++            android:text="COPIAR DIAGNÓSTICO" />
++
+         <TextView
+             android:id="@+id/compatText"
+             android:layout_width="match_parent"
