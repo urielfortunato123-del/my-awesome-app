@@ -70,10 +70,11 @@ jobs:
       - name: Package Android signing tools
         shell: bash
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/android-signing-tools/lib"
+          mkdir -p "$GITHUB_WORKSPACE/android-signing-tools/lib" "$GITHUB_WORKSPACE/android-signing-tools/lib64"
           cp /usr/local/lib/android/sdk/build-tools/36.0.0/apksigner "$GITHUB_WORKSPACE/android-signing-tools/"
           cp /usr/local/lib/android/sdk/build-tools/36.0.0/zipalign "$GITHUB_WORKSPACE/android-signing-tools/"
           cp /usr/local/lib/android/sdk/build-tools/36.0.0/lib/apksigner.jar "$GITHUB_WORKSPACE/android-signing-tools/lib/"
+          cp /usr/local/lib/android/sdk/build-tools/36.0.0/lib64/libc++.so "$GITHUB_WORKSPACE/android-signing-tools/lib64/"
           chmod +x "$GITHUB_WORKSPACE/android-signing-tools/apksigner" "$GITHUB_WORKSPACE/android-signing-tools/zipalign"
 
       - name: Upload debug APK
