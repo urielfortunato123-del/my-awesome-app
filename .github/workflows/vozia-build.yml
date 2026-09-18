@@ -122,6 +122,204 @@ jobs:
           layout.write_text(x)
           PY
           mv VoziaTranslate_v0.1.4 VoziaTranslate_v0.1.5
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path("VoziaTranslate_v0.1.5")
+
+          # v0.1.6: manter o serviço vivo ao sair da tela e registrar o motivo real de qualquer parada.
+          manifest = root / "app/src/main/AndroidManifest.xml"
+          m = manifest.read_text()
+          old_service = '''        <service
+              android:name=".TranslatorService"
+              android:exported="false"
+              android:foregroundServiceType="mediaProjection|microphone" />'''
+          new_service = '''        <service
+              android:name=".TranslatorService"
+              android:exported="false"
+              android:stopWithTask="false"
+              android:foregroundServiceType="mediaProjection|microphone" />'''
+          if old_service not in m:
+              raise SystemExit("service manifest block not found")
+          m = m.replace(old_service, new_service, 1)
+          manifest.write_text(m)
+
+          diag = root / "app/src/main/java/com/vozia/translate/Diagnostics.kt"
+          d = diag.read_text()
+
+          if 'private const val KEY_STOP_REASON' not in d:
+              d = d.replace(
+                  '    private const val KEY_CLEAN_STOP = "clean_stop"\n',
+                  '    private const val KEY_CLEAN_STOP = "clean_stop"\n    private const val KEY_STOP_REASON = "stop_reason"\n',
+                  1
+              )
+
+          # Limpa o motivo antigo ao iniciar uma nova sessão.
+          start_remove = '''            .remove(KEY_CRASH_TIME)
+              .commit()'''
+          start_remove_new = '''            .remove(KEY_CRASH_TIME)
+              .remove(KEY_STOP_REASON)
+              .commit()'''
+          if start_remove not in d:
+              raise SystemExit("diagnostics session reset block not found")
+          d = d.replace(start_remove, start_remove_new, 1)
+
+          # Novo encerramento: não sobrescreve a última etapa útil da sessão.
+          insert_before_record = '    fun record(context: Context, label: String, error: Throwable) {'
+          mark_stop = '''    fun markStop(context: Context, reason: String, clean: Boolean) {
+              val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+              val id = p.getString(KEY_SESSION_ID, "-") ?: "-"
+              val mode = p.getString(KEY_TEST_MODE, "-") ?: "-"
+              val stage = p.getString(KEY_STAGE, "unknown") ?: "unknown"
+              p.edit()
+                  .putString(KEY_STOP_REASON, reason)
+                  .putBoolean(KEY_CLEAN_STOP, clean)
+                  .commit()
+              updateProcessSummary(context, id, mode, "$stage|stop=$reason")
+              Log.i("VoziaDiag", "session=$id stop=$reason clean=$clean lastStage=$stage")
+          }
+
+          '''
+          if insert_before_record not in d:
+              raise SystemExit("diagnostics record anchor not found")
+          if 'fun markStop(context: Context' not in d:
+              d = d.replace(insert_before_record, mark_stop + insert_before_record, 1)
+
+          # Acrescenta o motivo de parada ao relatório.
+          report_clean = '            append("Encerramento limpo: ").append(clean).append(\'\\n\')\n'
+          report_clean_new = '''            append("Encerramento limpo: ").append(clean).append('\\n')
+              val stopReason = p.getString(KEY_STOP_REASON, null)
+              append("Motivo da parada: ").append(stopReason ?: "nenhum registrado").append('\\n')
+          '''
+          if report_clean not in d:
+              raise SystemExit("diagnostics report clean line not found")
+          d = d.replace(report_clean, report_clean_new, 1)
+          diag.write_text(d)
+
+          service = root / "app/src/main/java/com/vozia/translate/TranslatorService.kt"
+          t = service.read_text()
+
+          # Diferencia parada solicitada pelo usuário.
+          t = t.replace('''            ACTION_STOP -> {
+                  stopEverything()
+                  return START_NOT_STICKY
+              }''',
+              '''            ACTION_STOP -> {
+                  stopEverything("user_stop", true)
+                  return START_NOT_STICKY
+              }''', 1)
+
+          # MediaProjection encerrada: registra explicitamente o motivo.
+          t = t.replace(
+              '''                    publishStatus("Captura encerrada pelo Android")
+                      stopEverything()''',
+              '''                    Diagnostics.markStage(this@TranslatorService, "media_projection_onStop")
+                      publishStatus("Captura encerrada pelo Android")
+                      stopEverything("media_projection_onStop", true)''',
+              1
+          )
+
+          # Assinatura da rotina de encerramento com motivo.
+          if '    private fun stopEverything() {' not in t:
+              raise SystemExit("stopEverything signature not found")
+          t = t.replace(
+              '    private fun stopEverything() {',
+              '    private fun stopEverything(reason: String = "internal_stop", clean: Boolean = true) {',
+              1
+          )
+
+          # Não sobrescreve mais a última etapa útil com stopped_cleanly.
+          if '        Diagnostics.cleanStop(this)' not in t:
+              raise SystemExit("Diagnostics.cleanStop call not found")
+          t = t.replace(
+              '        Diagnostics.cleanStop(this)',
+              '        Diagnostics.markStop(this, reason, clean)',
+              1
+          )
+
+          # Se o Android destruir o serviço sem termos pedido, registra como parada externa.
+          old_destroy = '''    override fun onDestroy() {
+              if (!stopping.get()) stopEverything()
+              super.onDestroy()
+          }'''
+          new_destroy = '''    override fun onDestroy() {
+              if (!stopping.get()) {
+                  Diagnostics.markStage(this, "service_onDestroy_external")
+                  stopEverything("service_onDestroy_external", false)
+              }
+              super.onDestroy()
+          }
+
+          override fun onTaskRemoved(rootIntent: Intent?) {
+              // Sair da tela/retirar a tarefa não deve encerrar a tradução.
+              Diagnostics.markStage(this, "task_removed_service_kept_alive")
+              super.onTaskRemoved(rootIntent)
+          }'''
+          if old_destroy not in t:
+              raise SystemExit("onDestroy block not found")
+          t = t.replace(old_destroy, new_destroy, 1)
+
+          # Mantém a ação PARAR também quando a notificação é atualizada por status.
+          old_publish = '''    private fun publishStatus(text: String) {
+              if (outputMode != MODE_AUDIO) updateOverlay(text)
+
+              val manager = getSystemService(NotificationManager::class.java)
+              val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                  .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                  .setContentTitle("Vozia Translate")
+                  .setContentText(text.take(100))
+                  .setOngoing(true)
+                  .build()
+              runCatching { manager.notify(NOTIFICATION_ID, notification) }
+          }'''
+          new_publish = '''    private fun publishStatus(text: String) {
+              if (outputMode != MODE_AUDIO) updateOverlay(text)
+
+              val manager = getSystemService(NotificationManager::class.java)
+              val stopIntent = Intent(this, TranslatorService::class.java).apply { action = ACTION_STOP }
+              val stopPending = PendingIntent.getService(
+                  this,
+                  7,
+                  stopIntent,
+                  PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+              )
+              val openIntent = Intent(this, MainActivity::class.java)
+              val openPending = PendingIntent.getActivity(
+                  this,
+                  8,
+                  openIntent,
+                  PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+              )
+              val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                  .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                  .setContentTitle("Vozia Translate ativo")
+                  .setContentText(text.take(100))
+                  .setContentIntent(openPending)
+                  .setOngoing(true)
+                  .setOnlyAlertOnce(true)
+                  .addAction(0, "Parar", stopPending)
+                  .build()
+              runCatching { manager.notify(NOTIFICATION_ID, notification) }
+          }'''
+          if old_publish not in t:
+              raise SystemExit("publishStatus block not found")
+          t = t.replace(old_publish, new_publish, 1)
+          service.write_text(t)
+
+          gradle = root / "app/build.gradle.kts"
+          g = gradle.read_text()
+          g = g.replace('versionCode = 6', 'versionCode = 7')
+          g = g.replace('versionName = "0.1.5"', 'versionName = "0.1.6"')
+          gradle.write_text(g)
+
+          layout = root / "app/src/main/res/layout/activity_main.xml"
+          x = layout.read_text().replace(
+              'v0.1.5 • correção do crash do serviço',
+              'v0.1.6 • serviço em segundo plano'
+          )
+          layout.write_text(x)
+          PY
+          mv VoziaTranslate_v0.1.5 VoziaTranslate_v0.1.6
 
       - name: Expose preinstalled Android SDK
         shell: bash
@@ -139,21 +337,21 @@ jobs:
 
       - name: Build debug APK
         shell: bash
-        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.5
+        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.6
         run: |
           sed -i 's/compileSdk = 37/compileSdk = 36/' app/build.gradle.kts
           sed -i '/org.jetbrains.kotlin.android/d' build.gradle.kts app/build.gradle.kts
           sed -i '/^[[:space:]]*kotlinOptions[[:space:]]*{/,/^[[:space:]]*}/d' app/build.gradle.kts
           sed -i 's/import com.google.mlkit.nl.translate.DownloadConditions/import com.google.mlkit.common.model.DownloadConditions/' app/src/main/java/com/vozia/translate/TranslationEngine.kt
           gradle --no-daemon --stacktrace :app:assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.5-debug.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.6-debug.apk"
 
       - name: Build release unsigned APK
         shell: bash
-        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.5
+        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.6
         run: |
           gradle --no-daemon --stacktrace :app:assembleRelease
-          cp app/build/outputs/apk/release/app-release-unsigned.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.5-release-unsigned.apk"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.6-release-unsigned.apk"
 
       - name: Package Android signing tools
         shell: bash
@@ -168,16 +366,16 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: VoziaTranslate-v0.1.5-debug
-          path: VoziaTranslate_v0.1.5-debug.apk
+          name: VoziaTranslate-v0.1.6-debug
+          path: VoziaTranslate_v0.1.6-debug.apk
           if-no-files-found: error
           retention-days: 7
 
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
         with:
-          name: VoziaTranslate-v0.1.5-release-unsigned
-          path: VoziaTranslate_v0.1.5-release-unsigned.apk
+          name: VoziaTranslate-v0.1.6-release-unsigned
+          path: VoziaTranslate_v0.1.6-release-unsigned.apk
           if-no-files-found: error
           retention-days: 7
 
