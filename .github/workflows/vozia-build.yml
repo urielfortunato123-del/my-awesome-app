@@ -35,6 +35,9 @@ jobs:
           unzip -q vozia-ci/source.zip -d vozia-ci/extracted
           unzip -t vozia-ci/source.zip
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Android SDK 37
         shell: bash
         run: |
