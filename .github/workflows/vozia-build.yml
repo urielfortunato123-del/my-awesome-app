@@ -148,14 +148,14 @@ jobs:
               )
 
           # Limpa o motivo antigo ao iniciar uma nova sessão.
-          start_remove = '''            .remove(KEY_CRASH_TIME)
-              .commit()'''
-          start_remove_new = '''            .remove(KEY_CRASH_TIME)
-              .remove(KEY_STOP_REASON)
-              .commit()'''
-          if start_remove not in d:
-              raise SystemExit("diagnostics session reset block not found")
-          d = d.replace(start_remove, start_remove_new, 1)
+          reset_anchor = '.remove(KEY_CRASH_TIME)'
+          if reset_anchor not in d:
+              raise SystemExit("diagnostics crash-time reset anchor not found")
+          d = d.replace(
+              reset_anchor,
+              reset_anchor + '\n                .remove(KEY_STOP_REASON)',
+              1
+          )
 
           # Novo encerramento: não sobrescreve a última etapa útil da sessão.
           insert_before_record = '    fun record(context: Context, label: String, error: Throwable) {'
@@ -179,14 +179,14 @@ jobs:
               d = d.replace(insert_before_record, mark_stop + insert_before_record, 1)
 
           # Acrescenta o motivo de parada ao relatório.
-          report_clean = '            append("Encerramento limpo: ").append(clean).append(\'\\n\')\n'
-          report_clean_new = '''            append("Encerramento limpo: ").append(clean).append('\\n')
-              val stopReason = p.getString(KEY_STOP_REASON, null)
-              append("Motivo da parada: ").append(stopReason ?: "nenhum registrado").append('\\n')
-          '''
-          if report_clean not in d:
-              raise SystemExit("diagnostics report clean line not found")
-          d = d.replace(report_clean, report_clean_new, 1)
+          report_anchor = 'append("Encerramento limpo: ").append(clean).append(\'\\n\')'
+          if report_anchor not in d:
+              raise SystemExit("diagnostics report clean anchor not found")
+          d = d.replace(
+              report_anchor,
+              report_anchor + '\n            val stopReason = p.getString(KEY_STOP_REASON, null)\n            append("Motivo da parada: ").append(stopReason ?: "nenhum registrado").append(\'\\n\')',
+              1
+          )
           diag.write_text(d)
 
           service = root / "app/src/main/java/com/vozia/translate/TranslatorService.kt"
