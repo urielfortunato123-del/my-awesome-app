@@ -130,18 +130,11 @@ jobs:
           # v0.1.6: manter o serviço vivo ao sair da tela e registrar o motivo real de qualquer parada.
           manifest = root / "app/src/main/AndroidManifest.xml"
           m = manifest.read_text()
-          old_service = '''        <service
-              android:name=".TranslatorService"
-              android:exported="false"
-              android:foregroundServiceType="mediaProjection|microphone" />'''
-          new_service = '''        <service
-              android:name=".TranslatorService"
-              android:exported="false"
-              android:stopWithTask="false"
-              android:foregroundServiceType="mediaProjection|microphone" />'''
-          if old_service not in m:
-              raise SystemExit("service manifest block not found")
-          m = m.replace(old_service, new_service, 1)
+          manifest_anchor = '            android:exported="false"\n            android:foregroundServiceType="mediaProjection|microphone" />'
+          manifest_replacement = '            android:exported="false"\n            android:stopWithTask="false"\n            android:foregroundServiceType="mediaProjection|microphone" />'
+          if manifest_anchor not in m:
+              raise SystemExit("service manifest attributes not found")
+          m = m.replace(manifest_anchor, manifest_replacement, 1)
           manifest.write_text(m)
 
           diag = root / "app/src/main/java/com/vozia/translate/Diagnostics.kt"
