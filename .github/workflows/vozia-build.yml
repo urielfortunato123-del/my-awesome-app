@@ -31,7 +31,7 @@ jobs:
       - name: Reconstruct source
         shell: bash
         run: |
-          cat vozia-ci/chunk1.b64 vozia-ci/chunk2.b64 vozia-ci/chunk3.b64 vozia-ci/chunk4a.b64 vozia-ci/chunk4b.b64 vozia-ci/chunk4c.b64 vozia-ci/chunk4d.b64 | base64 -d > vozia-ci/source.zip
+          cat vozia-ci/v011_1.b64 vozia-ci/v011_2.b64 vozia-ci/v011_3a.b64 vozia-ci/v011_3b.b64 | base64 -d > vozia-ci/source.zip
           unzip -q vozia-ci/source.zip -d vozia-ci/extracted
           unzip -t vozia-ci/source.zip
 
@@ -51,19 +51,19 @@ jobs:
 
       - name: Build debug APK
         shell: bash
-        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.0
+        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.1
         run: |
           sed -i 's/compileSdk = 37/compileSdk = 36/' app/build.gradle.kts
           sed -i '/org.jetbrains.kotlin.android/d' build.gradle.kts app/build.gradle.kts
           sed -i '/^[[:space:]]*kotlinOptions[[:space:]]*{/,/^[[:space:]]*}/d' app/build.gradle.kts
           sed -i 's/import com.google.mlkit.nl.translate.DownloadConditions/import com.google.mlkit.common.model.DownloadConditions/' app/src/main/java/com/vozia/translate/TranslationEngine.kt
           gradle --no-daemon --stacktrace :app:assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.0-debug.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.1-debug.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: VoziaTranslate-v0.1.0-debug
-          path: VoziaTranslate_v0.1.0-debug.apk
+          name: VoziaTranslate-v0.1.1-debug
+          path: VoziaTranslate_v0.1.1-debug.apk
           if-no-files-found: error
           retention-days: 7
