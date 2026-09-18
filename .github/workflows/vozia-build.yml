@@ -34,7 +34,7 @@ jobs:
           cat vozia-ci/v011_1.b64 vozia-ci/v011_2.b64 vozia-ci/v011_3a.b64 vozia-ci/v011_3b.b64 | base64 -d > vozia-ci/source.zip
           unzip -q vozia-ci/source.zip -d vozia-ci/extracted
           unzip -t vozia-ci/source.zip
-          mv vozia-ci/extracted/VoziaTranslate_v0.1.2 vozia-ci/extracted/VoziaTranslate_v0.1.2
+          mv vozia-ci/extracted/VoziaTranslate_v0.1.1 vozia-ci/extracted/VoziaTranslate_v0.1.2
           cd vozia-ci/extracted/VoziaTranslate_v0.1.2
           patch -p1 < "$GITHUB_WORKSPACE/vozia-ci/v012.patch"
 
