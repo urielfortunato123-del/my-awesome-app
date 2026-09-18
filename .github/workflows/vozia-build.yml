@@ -56,6 +56,7 @@ jobs:
           sed -i 's/compileSdk = 37/compileSdk = 36/' app/build.gradle.kts
           sed -i '/org.jetbrains.kotlin.android/d' build.gradle.kts app/build.gradle.kts
           sed -i '/^[[:space:]]*kotlinOptions[[:space:]]*{/,/^[[:space:]]*}/d' app/build.gradle.kts
+          sed -i 's/import com.google.mlkit.nl.translate.DownloadConditions/import com.google.mlkit.common.model.DownloadConditions/' app/src/main/java/com/vozia/translate/TranslationEngine.kt
           gradle --no-daemon --stacktrace :app:assembleDebug
           cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.0-debug.apk"
 
