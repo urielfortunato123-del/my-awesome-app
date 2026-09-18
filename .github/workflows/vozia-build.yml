@@ -45,6 +45,66 @@ jobs:
           patch -p1 < "$GITHUB_WORKSPACE/vozia-ci/v014.patch"
           cd ..
           mv VoziaTranslate_v0.1.3 VoziaTranslate_v0.1.4
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path("VoziaTranslate_v0.1.4")
+          service = root / "app/src/main/java/com/vozia/translate/TranslatorService.kt"
+          text = service.read_text()
+
+          old_field = "    private val translator = TranslationEngine()"
+          new_field = "    private var translator: TranslationEngine? = null"
+          if old_field not in text:
+              raise SystemExit("translator field initializer not found")
+          text = text.replace(old_field, new_field, 1)
+
+          old_translate = '''        Diagnostics.markStage(this, "translate_request")
+          runCatching {
+              translator.translate(
+          '''
+          new_translate = '''        Diagnostics.markStage(this, "translate_engine_prepare")
+          val engine = translator ?: runCatching {
+              TranslationEngine()
+          }.onFailure {
+              Diagnostics.record(this, "translator_init_failure", it)
+          }.getOrNull()?.also {
+              translator = it
+              Diagnostics.markStage(this, "translator_initialized")
+          }
+
+          if (engine == null) {
+              if (!isPartial) publishStatus("Falha ao iniciar mecanismo de tradução")
+              return
+          }
+
+          Diagnostics.markStage(this, "translate_request")
+          runCatching {
+              engine.translate(
+          '''
+          if old_translate not in text:
+              raise SystemExit("translate invocation block not found")
+          text = text.replace(old_translate, new_translate, 1)
+
+          old_close = '        runCatching { translator.close() }.onFailure { Diagnostics.record(this, "translator_close_failure", it) }'
+          new_close = '''        runCatching { translator?.close() }.onFailure { Diagnostics.record(this, "translator_close_failure", it) }
+          translator = null'''
+          if old_close not in text:
+              raise SystemExit("translator close block not found")
+          text = text.replace(old_close, new_close, 1)
+
+          service.write_text(text)
+
+          gradle = root / "app/build.gradle.kts"
+          g = gradle.read_text()
+          g = g.replace('versionCode = 5', 'versionCode = 6')
+          g = g.replace('versionName = "0.1.4"', 'versionName = "0.1.5"')
+          gradle.write_text(g)
+
+          layout = root / "app/src/main/res/layout/activity_main.xml"
+          x = layout.read_text().replace('v0.1.4 • diagnóstico de sistema', 'v0.1.5 • correção do crash do serviço')
+          layout.write_text(x)
+          PY
+          mv VoziaTranslate_v0.1.4 VoziaTranslate_v0.1.5
 
       - name: Expose preinstalled Android SDK
         shell: bash
@@ -62,21 +122,21 @@ jobs:
 
       - name: Build debug APK
         shell: bash
-        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.4
+        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.5
         run: |
           sed -i 's/compileSdk = 37/compileSdk = 36/' app/build.gradle.kts
           sed -i '/org.jetbrains.kotlin.android/d' build.gradle.kts app/build.gradle.kts
           sed -i '/^[[:space:]]*kotlinOptions[[:space:]]*{/,/^[[:space:]]*}/d' app/build.gradle.kts
           sed -i 's/import com.google.mlkit.nl.translate.DownloadConditions/import com.google.mlkit.common.model.DownloadConditions/' app/src/main/java/com/vozia/translate/TranslationEngine.kt
           gradle --no-daemon --stacktrace :app:assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.4-debug.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.5-debug.apk"
 
       - name: Build release unsigned APK
         shell: bash
-        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.4
+        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.5
         run: |
           gradle --no-daemon --stacktrace :app:assembleRelease
-          cp app/build/outputs/apk/release/app-release-unsigned.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.4-release-unsigned.apk"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.5-release-unsigned.apk"
 
       - name: Package Android signing tools
         shell: bash
@@ -91,16 +151,16 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: VoziaTranslate-v0.1.4-debug
-          path: VoziaTranslate_v0.1.4-debug.apk
+          name: VoziaTranslate-v0.1.5-debug
+          path: VoziaTranslate_v0.1.5-debug.apk
           if-no-files-found: error
           retention-days: 7
 
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
         with:
-          name: VoziaTranslate-v0.1.4-release-unsigned
-          path: VoziaTranslate_v0.1.4-release-unsigned.apk
+          name: VoziaTranslate-v0.1.5-release-unsigned
+          path: VoziaTranslate_v0.1.5-release-unsigned.apk
           if-no-files-found: error
           retention-days: 7
 
