@@ -39,7 +39,7 @@ jobs:
           patch -p1 < "$GITHUB_WORKSPACE/vozia-ci/v012.patch"
           patch -p1 < "$GITHUB_WORKSPACE/vozia-ci/v013.patch"
           cd ..
-          mv VoziaTranslate_v0.1.3 VoziaTranslate_v0.1.3
+          mv VoziaTranslate_v0.1.2 VoziaTranslate_v0.1.3
 
       - name: Expose preinstalled Android SDK
         shell: bash
