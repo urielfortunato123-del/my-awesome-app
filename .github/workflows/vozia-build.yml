@@ -91,6 +91,26 @@ jobs:
 
           service.write_text(text)
 
+          engine_file = root / "app/src/main/java/com/vozia/translate/TranslationEngine.kt"
+          e = engine_file.read_text()
+          old_identifier = '    private val languageIdentifier = LanguageIdentification.getClient()'
+          new_identifier = '''    private val languageIdentifierLazy = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+              LanguageIdentification.getClient()
+          }
+          private val languageIdentifier by languageIdentifierLazy'''
+          if old_identifier not in e:
+              raise SystemExit("languageIdentifier eager initializer not found")
+          e = e.replace(old_identifier, new_identifier, 1)
+
+          old_engine_close = '        languageIdentifier.close()'
+          new_engine_close = '''        if (languageIdentifierLazy.isInitialized()) {
+              languageIdentifier.close()
+          }'''
+          if old_engine_close not in e:
+              raise SystemExit("languageIdentifier close not found")
+          e = e.replace(old_engine_close, new_engine_close, 1)
+          engine_file.write_text(e)
+
           gradle = root / "app/build.gradle.kts"
           g = gradle.read_text()
           g = g.replace('versionCode = 5', 'versionCode = 6')
