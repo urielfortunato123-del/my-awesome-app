@@ -58,11 +58,10 @@ jobs:
               raise SystemExit("translator field initializer not found")
           text = text.replace(old_field, new_field, 1)
 
-          old_translate = '''        Diagnostics.markStage(this, "translate_request")
-          runCatching {
-              translator.translate(
-          '''
-          new_translate = '''        Diagnostics.markStage(this, "translate_engine_prepare")
+          marker = '        Diagnostics.markStage(this, "translate_request")\n'
+          if marker not in text:
+              raise SystemExit("translate marker not found")
+          prepare = '''        Diagnostics.markStage(this, "translate_engine_prepare")
           val engine = translator ?: runCatching {
               TranslationEngine()
           }.onFailure {
@@ -77,13 +76,11 @@ jobs:
               return
           }
 
-          Diagnostics.markStage(this, "translate_request")
-          runCatching {
-              engine.translate(
           '''
-          if old_translate not in text:
-              raise SystemExit("translate invocation block not found")
-          text = text.replace(old_translate, new_translate, 1)
+          text = text.replace(marker, prepare + marker, 1)
+          if "translator.translate(" not in text:
+              raise SystemExit("translator.translate call not found")
+          text = text.replace("translator.translate(", "engine.translate(", 1)
 
           old_close = '        runCatching { translator.close() }.onFailure { Diagnostics.record(this, "translator_close_failure", it) }'
           new_close = '''        runCatching { translator?.close() }.onFailure { Diagnostics.record(this, "translator_close_failure", it) }
