@@ -231,10 +231,6 @@ jobs:
           )
 
           # Se o Android destruir o serviço sem termos pedido, registra como parada externa.
-          old_destroy = '''    override fun onDestroy() {
-              if (!stopping.get()) stopEverything()
-              super.onDestroy()
-          }'''
           new_destroy = '''    override fun onDestroy() {
               if (!stopping.get()) {
                   Diagnostics.markStage(this, "service_onDestroy_external")
@@ -248,23 +244,13 @@ jobs:
               Diagnostics.markStage(this, "task_removed_service_kept_alive")
               super.onTaskRemoved(rootIntent)
           }'''
-          if old_destroy not in t:
-              raise SystemExit("onDestroy block not found")
-          t = t.replace(old_destroy, new_destroy, 1)
+          destroy_start = t.find('    override fun onDestroy() {')
+          destroy_end = t.find('\n\n    override fun onReadyForSpeech', destroy_start)
+          if destroy_start < 0 or destroy_end < 0:
+              raise SystemExit("onDestroy region not found")
+          t = t[:destroy_start] + new_destroy + t[destroy_end:]
 
           # Mantém a ação PARAR também quando a notificação é atualizada por status.
-          old_publish = '''    private fun publishStatus(text: String) {
-              if (outputMode != MODE_AUDIO) updateOverlay(text)
-
-              val manager = getSystemService(NotificationManager::class.java)
-              val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                  .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-                  .setContentTitle("Vozia Translate")
-                  .setContentText(text.take(100))
-                  .setOngoing(true)
-                  .build()
-              runCatching { manager.notify(NOTIFICATION_ID, notification) }
-          }'''
           new_publish = '''    private fun publishStatus(text: String) {
               if (outputMode != MODE_AUDIO) updateOverlay(text)
 
@@ -294,9 +280,11 @@ jobs:
                   .build()
               runCatching { manager.notify(NOTIFICATION_ID, notification) }
           }'''
-          if old_publish not in t:
-              raise SystemExit("publishStatus block not found")
-          t = t.replace(old_publish, new_publish, 1)
+          publish_start = t.find('    private fun publishStatus(text: String) {')
+          publish_end = t.find('\n\n    private fun stopEverything', publish_start)
+          if publish_start < 0 or publish_end < 0:
+              raise SystemExit("publishStatus region not found")
+          t = t[:publish_start] + new_publish + t[publish_end:]
           service.write_text(t)
 
           gradle = root / "app/build.gradle.kts"
