@@ -24,26 +24,22 @@ if "projectionVirtualDisplay" not in t:
         raise SystemExit("mediaProjection field anchor not found")
     t = t.replace(field_anchor, fields, 1)
 
-# Cria o VirtualDisplay logo após registrar o callback e obter a projeção.
-projection_anchor = """        val projection = mediaProjection ?: run {
+# Cria o VirtualDisplay antes de montar o AudioPlaybackCaptureConfiguration.
+if "createProjectionKeepAlive(" not in t.split("private fun createProjectionKeepAlive", 1)[0]:
+    builder_pos = t.find("AudioPlaybackCaptureConfiguration.Builder(")
+    if builder_pos < 0:
+        raise SystemExit("AudioPlaybackCaptureConfiguration.Builder not found")
+    line_start = t.rfind("\n", 0, builder_pos) + 1
+    keepalive_call = """        val keepAliveProjection = mediaProjection ?: run {
             publishStatus("Não foi possível iniciar captura")
             return
         }
-
-        val captureBuilder = AudioPlaybackCaptureConfiguration.Builder(projection)"""
-projection_new = """        val projection = mediaProjection ?: run {
-            publishStatus("Não foi possível iniciar captura")
-            return
-        }
-
         Diagnostics.markStage(this, "before_projection_keepalive")
-        createProjectionKeepAlive(projection)
+        createProjectionKeepAlive(keepAliveProjection)
         Diagnostics.markStage(this, "projection_keepalive_ready")
 
-        val captureBuilder = AudioPlaybackCaptureConfiguration.Builder(projection)"""
-if projection_anchor not in t:
-    raise SystemExit("projection capture-builder anchor not found")
-t = t.replace(projection_anchor, projection_new, 1)
+"""
+    t = t[:line_start] + keepalive_call + t[line_start:]
 
 # Função de keep-alive: VirtualDisplay pequeno, descartando os frames imediatamente.
 method_anchor = "    private fun startSpeechRecognizerWithInjectedAudio(readFd: ParcelFileDescriptor) {"
