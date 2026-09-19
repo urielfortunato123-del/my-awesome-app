@@ -303,6 +303,8 @@ jobs:
           mv VoziaTranslate_v0.1.5 VoziaTranslate_v0.1.6
           python3 "$GITHUB_WORKSPACE/vozia-ci/v017.py" "$GITHUB_WORKSPACE/vozia-ci/extracted/VoziaTranslate_v0.1.6"
           mv VoziaTranslate_v0.1.6 VoziaTranslate_v0.1.7
+          python3 "$GITHUB_WORKSPACE/vozia-ci/v018.py" "$GITHUB_WORKSPACE/vozia-ci/extracted/VoziaTranslate_v0.1.7"
+          mv VoziaTranslate_v0.1.7 VoziaTranslate_v0.1.8
 
       - name: Expose preinstalled Android SDK
         shell: bash
@@ -320,21 +322,21 @@ jobs:
 
       - name: Build debug APK
         shell: bash
-        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.7
+        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.8
         run: |
           sed -i 's/compileSdk = 37/compileSdk = 36/' app/build.gradle.kts
           sed -i '/org.jetbrains.kotlin.android/d' build.gradle.kts app/build.gradle.kts
           sed -i '/^[[:space:]]*kotlinOptions[[:space:]]*{/,/^[[:space:]]*}/d' app/build.gradle.kts
           sed -i 's/import com.google.mlkit.nl.translate.DownloadConditions/import com.google.mlkit.common.model.DownloadConditions/' app/src/main/java/com/vozia/translate/TranslationEngine.kt
           gradle --no-daemon --stacktrace :app:assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.7-debug.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.8-debug.apk"
 
       - name: Build release unsigned APK
         shell: bash
-        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.7
+        working-directory: vozia-ci/extracted/VoziaTranslate_v0.1.8
         run: |
           gradle --no-daemon --stacktrace :app:assembleRelease
-          cp app/build/outputs/apk/release/app-release-unsigned.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.7-release-unsigned.apk"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$GITHUB_WORKSPACE/VoziaTranslate_v0.1.8-release-unsigned.apk"
 
       - name: Package Android signing tools
         shell: bash
@@ -349,16 +351,16 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: VoziaTranslate-v0.1.7-debug
-          path: VoziaTranslate_v0.1.7-debug.apk
+          name: VoziaTranslate-v0.1.8-debug
+          path: VoziaTranslate_v0.1.8-debug.apk
           if-no-files-found: error
           retention-days: 7
 
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
         with:
-          name: VoziaTranslate-v0.1.7-release-unsigned
-          path: VoziaTranslate_v0.1.7-release-unsigned.apk
+          name: VoziaTranslate-v0.1.8-release-unsigned
+          path: VoziaTranslate_v0.1.8-release-unsigned.apk
           if-no-files-found: error
           retention-days: 7
 
