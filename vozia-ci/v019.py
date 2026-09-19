@@ -63,19 +63,22 @@ if capture_anchor not in t:
 t = t.replace(capture_anchor, virtual_display_block + capture_anchor, 1)
 
 # Limpeza do VirtualDisplay/ImageReader antes de parar o MediaProjection.
-stop_anchor = """        runCatching { mediaProjection?.stop() }
+cleanup_anchor = """        val projection = mediaProjection
         mediaProjection = null
+        try { projection?.stop() } catch (_: Throwable) { }
 """
-stop_new = """        runCatching { projectionDisplay?.release() }
+cleanup_new = """        runCatching { projectionDisplay?.release() }
         projectionDisplay = null
         runCatching { projectionImageReader?.close() }
         projectionImageReader = null
-        runCatching { mediaProjection?.stop() }
+
+        val projection = mediaProjection
         mediaProjection = null
+        try { projection?.stop() } catch (_: Throwable) { }
 """
-if stop_anchor not in t:
+if cleanup_anchor not in t:
     raise SystemExit("mediaProjection cleanup block not found")
-t = t.replace(stop_anchor, stop_new, 1)
+t = t.replace(cleanup_anchor, cleanup_new, 1)
 
 service.write_text(t)
 
