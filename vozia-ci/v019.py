@@ -25,13 +25,8 @@ if field_anchor not in t:
 t = t.replace(field_anchor, field_new, 1)
 
 # Após registrar o callback, cria um VirtualDisplay 64x64 e descarta todos os frames.
-cb_anchor = """        }, mainHandler)
-
-        val captureBuilder = AudioPlaybackCaptureConfiguration.Builder(mediaProjection!!)
-"""
-cb_new = """        }, mainHandler)
-
-        Diagnostics.markStage(this, "before_virtual_display_create")
+capture_anchor = "        val captureBuilder = AudioPlaybackCaptureConfiguration.Builder(mediaProjection!!)\n"
+virtual_display_block = """        Diagnostics.markStage(this, "before_virtual_display_create")
         projectionImageReader = ImageReader.newInstance(
             64,
             64,
@@ -62,11 +57,10 @@ cb_new = """        }, mainHandler)
         }
         Diagnostics.markStage(this, "virtual_display_created")
 
-        val captureBuilder = AudioPlaybackCaptureConfiguration.Builder(mediaProjection!!)
 """
-if cb_anchor not in t:
-    raise SystemExit("projection callback/capture builder anchor not found")
-t = t.replace(cb_anchor, cb_new, 1)
+if capture_anchor not in t:
+    raise SystemExit("capture builder anchor not found")
+t = t.replace(capture_anchor, virtual_display_block + capture_anchor, 1)
 
 # Limpeza do VirtualDisplay/ImageReader antes de parar o MediaProjection.
 stop_anchor = """        runCatching { mediaProjection?.stop() }
