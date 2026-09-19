@@ -307,8 +307,6 @@ jobs:
           mv VoziaTranslate_v0.1.7 VoziaTranslate_v0.1.8
           python3 "$GITHUB_WORKSPACE/vozia-ci/v019.py" "$GITHUB_WORKSPACE/vozia-ci/extracted/VoziaTranslate_v0.1.8"
           mv VoziaTranslate_v0.1.8 VoziaTranslate_v0.1.9
-          python3 "$GITHUB_WORKSPACE/vozia-ci/v019.py" "$GITHUB_WORKSPACE/vozia-ci/extracted/VoziaTranslate_v0.1.8"
-          mv VoziaTranslate_v0.1.8 VoziaTranslate_v0.1.9
 
       - name: Expose preinstalled Android SDK
         shell: bash
