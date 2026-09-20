@@ -1,0 +1,79 @@
+name: Build Bateria IA MV0_15 Release
+
+on:
+  push:
+    branches:
+      - bateria-ia-mv015-build
+    paths:
+      - 'bateria-build/mv015e2_*'
+      - '.github/workflows/bateria-ia-mv015.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore exact MV0_15 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat bateria-build/mv015e2_* > bateria-build/BateriaIA_MV0_15_source.b64
+          base64 -d bateria-build/BateriaIA_MV0_15_source.b64 > bateria-build/BateriaIA_MV0_15_source.tar.xz
+          echo "34607365d0aa3d5473e4a9cdcd07179f63f3ba5d9c5dfef71a64a19eee541e72  bateria-build/BateriaIA_MV0_15_source.tar.xz" | sha256sum -c -
+          mkdir -p bateria-build/mv015-source
+          tar -xJf bateria-build/BateriaIA_MV0_15_source.tar.xz -C bateria-build/mv015-source
+
+      - name: Preflight MV0_15
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "versionCode 43" bateria-build/mv015-source/app/build.gradle
+          grep -q "0.15.0-mv0-15-next-charge-clarity-universal" bateria-build/mv015-source/app/build.gradle
+          grep -q 'txtExactNextChargeTime.setText("Agora")' bateria-build/mv015-source/app/src/main/java/com/bateriaia/app/MainActivity.java
+          grep -q 'txtExactNextChargeTime.setText("Nenhuma após esta")' bateria-build/mv015-source/app/src/main/java/com/bateriaia/app/MainActivity.java
+          grep -q 'txtExactNextChargeTime.setText(thermalStability.stabilizing ? "Após estabilizar" : "Após resfriar")' bateria-build/mv015-source/app/src/main/java/com/bateriaia/app/MainActivity.java
+          ! grep -q 'result.length() > 220' bateria-build/mv015-source/app/src/main/java/com/bateriaia/app/MainActivity.java
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build release APK
+        working-directory: bateria-build/mv015-source
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Verify unsigned release
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find bateria-build/mv015-source/app/build/outputs/apk/release -name '*.apk' -print -quit)
+          test -n "$APK"
+          cp "$APK" bateria-build/BateriaIA_MV0_15_unsigned.apk
+          unzip -t bateria-build/BateriaIA_MV0_15_unsigned.apk >/dev/null
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          "$AAPT" dump badging bateria-build/BateriaIA_MV0_15_unsigned.apk | tee bateria-build/mv015_badging.txt
+          grep -q "package: name='com.bateriaia.app' versionCode='43'" bateria-build/mv015_badging.txt
+          test -f bateria-build/mv015-source/app/build/outputs/mapping/release/mapping.txt
+          sha256sum bateria-build/BateriaIA_MV0_15_unsigned.apk > bateria-build/BateriaIA_MV0_15_unsigned.apk.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bateriaia-mv0-15-unsigned
+          path: |
+            bateria-build/BateriaIA_MV0_15_unsigned.apk
+            bateria-build/BateriaIA_MV0_15_unsigned.apk.sha256
+            bateria-build/mv015_badging.txt
+            bateria-build/mv015-source/app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
