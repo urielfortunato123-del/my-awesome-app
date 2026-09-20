@@ -235,8 +235,10 @@ for icon in (
     "ic_nav_charge_modern", "ic_nav_more_modern"
 ):
     assert f'android:drawableTop="@drawable/{icon}"' in page
-for old_glyph in ("⌂", "◉", "✦", "☰"):
-    assert old_glyph not in page
+assert 'android:text="⌂&#10;Início"' not in page
+assert 'android:text="◉&#10;Consumo"' not in page
+assert 'android:text="✦&#10;MOVA"' not in page
+assert 'android:text="☰&#10;Mais"' not in page
 assert "setCompoundDrawableTintList" in main.read_text(encoding="utf-8")
 
 for p in (root / "app/src/main/res").rglob("*.xml"):
