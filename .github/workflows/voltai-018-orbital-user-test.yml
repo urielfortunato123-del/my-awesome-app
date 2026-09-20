@@ -21,7 +21,7 @@ jobs:
           set -euo pipefail
           cat voltai-build/volt18_* > voltai-build/VoltAI_0_18_source.b64
           base64 -d voltai-build/VoltAI_0_18_source.b64 > voltai-build/VoltAI_0_18_source.tar.xz
-          echo "21b8d7bab3d1b9c50ccc5b2c19b4d627a4861c3378b547b9e6dda252d5a25a48  voltai-build/VoltAI_0_18_source.tar.xz" | sha256sum -c -
+          echo "89b459179f2bd802017f13581f2fbe435e3072a2106d2a31c47bb923774c78db  voltai-build/VoltAI_0_18_source.tar.xz" | sha256sum -c -
           mkdir -p voltai-build/src018
           tar -xJf voltai-build/VoltAI_0_18_source.tar.xz -C voltai-build/src018
 
