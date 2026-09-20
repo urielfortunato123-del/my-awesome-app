@@ -80,4 +80,7 @@ jobs:
             bateria-build/BateriaIA_MV0_15_unsigned.apk.sha256
             bateria-build/mv015_badging.txt
             bateria-build/mv015-source/app/build/outputs/mapping/release/mapping.txt
+            /usr/local/lib/android/sdk/build-tools/36.0.0/zipalign
+            /usr/local/lib/android/sdk/build-tools/36.0.0/apksigner
+            /usr/local/lib/android/sdk/build-tools/36.0.0/lib/apksigner.jar
           if-no-files-found: error
