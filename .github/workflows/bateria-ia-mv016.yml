@@ -1,0 +1,86 @@
+name: Build Bateria IA MV0_16 Release
+
+on:
+  push:
+    branches:
+      - bateria-ia-mv016-build
+    paths:
+      - 'bateria-build/mv016src_*'
+      - '.github/workflows/bateria-ia-mv016.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore exact MV0_16 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat bateria-build/mv016src_* > bateria-build/BateriaIA_MV0_16_source.b64
+          base64 -d bateria-build/BateriaIA_MV0_16_source.b64 > bateria-build/BateriaIA_MV0_16_source.tar.xz
+          echo "c1fbbf1a5ee8bf542756fc69c12a419a28f556d4a5efb3a349cddee8582c348f  bateria-build/BateriaIA_MV0_16_source.tar.xz" | sha256sum -c -
+          mkdir -p bateria-build/mv016-source
+          tar -xJf bateria-build/BateriaIA_MV0_16_source.tar.xz -C bateria-build/mv016-source
+
+      - name: Preflight MV0_16
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "versionCode 44" bateria-build/mv016-source/app/build.gradle
+          grep -q "0.16.0-mv0-16-mova-analytics-universal" bateria-build/mv016-source/app/build.gradle
+          test -f bateria-build/mv016-source/app/src/main/java/com/bateriaia/app/MovaDashboardView.java
+          test -f bateria-build/mv016-source/app/src/main/java/com/bateriaia/app/MovaDetailActivity.java
+          grep -q "movaDashboard" bateria-build/mv016-source/app/src/main/res/layout/activity_main.xml
+          grep -q "MovaDetailActivity" bateria-build/mv016-source/app/src/main/AndroidManifest.xml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build release APK
+        working-directory: bateria-build/mv016-source
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Verify unsigned release
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find bateria-build/mv016-source/app/build/outputs/apk/release -name '*.apk' -print -quit)
+          test -n "$APK"
+          cp "$APK" bateria-build/BateriaIA_MV0_16_unsigned.apk
+          unzip -t bateria-build/BateriaIA_MV0_16_unsigned.apk >/dev/null
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          "$AAPT" dump badging bateria-build/BateriaIA_MV0_16_unsigned.apk | tee bateria-build/mv016_badging.txt
+          grep -q "package: name='com.bateriaia.app' versionCode='44'" bateria-build/mv016_badging.txt
+          test -f bateria-build/mv016-source/app/build/outputs/mapping/release/mapping.txt
+          sha256sum bateria-build/BateriaIA_MV0_16_unsigned.apk > bateria-build/BateriaIA_MV0_16_unsigned.apk.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bateriaia-mv0-16-unsigned
+          path: |
+            bateria-build/BateriaIA_MV0_16_unsigned.apk
+            bateria-build/BateriaIA_MV0_16_unsigned.apk.sha256
+            bateria-build/mv016_badging.txt
+            bateria-build/mv016-source/app/build/outputs/mapping/release/mapping.txt
+            /usr/local/lib/android/sdk/build-tools/36.0.0/zipalign
+            /usr/local/lib/android/sdk/build-tools/36.0.0/apksigner
+            /usr/local/lib/android/sdk/build-tools/36.0.0/lib/apksigner.jar
+          if-no-files-found: error
