@@ -1,0 +1,87 @@
+name: Build VoltAI 0.19 Brand Icon User Test
+
+on:
+  push:
+    branches:
+      - voltai-019-brand-icon-user-test
+    paths:
+      - 'voltai-build/volt19_*'
+      - '.github/workflows/voltai-019-brand-icon-user-test.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore VoltAI 0.19 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat voltai-build/volt19_* > voltai-build/VoltAI_0_19_source.b64
+          base64 -d voltai-build/VoltAI_0_19_source.b64 > voltai-build/VoltAI_0_19_source.tar.xz
+          echo "62c8c277b538793be698cab7e9ddf83be583a639379f8d99ce06bb18b3ae61bf  voltai-build/VoltAI_0_19_source.tar.xz" | sha256sum -c -
+          mkdir -p voltai-build/src019
+          tar -xJf voltai-build/VoltAI_0_19_source.tar.xz -C voltai-build/src019
+
+      - name: Preflight brand icon
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "versionCode 47" voltai-build/src019/app/build.gradle
+          grep -q "0.19.0-voltai-brand-icon-user-test-universal" voltai-build/src019/app/build.gradle
+          test -s voltai-build/src019/app/src/main/res/drawable-nodpi/voltai_brand_icon.webp
+          test -s voltai-build/src019/app/src/main/res/drawable-nodpi/ic_launcher_foreground_brand.webp
+          grep -q "@drawable/ic_launcher_foreground_brand" voltai-build/src019/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          grep -q "@drawable/ic_launcher_foreground_brand" voltai-build/src019/app/src/main/res/mipmap-anydpi-v33/ic_launcher.xml
+          grep -q "R.drawable.voltai_brand_icon" voltai-build/src019/app/src/main/java/com/bateriaia/app/VoltAiMarkView.java
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build release APK
+        working-directory: voltai-build/src019
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Verify unsigned release
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find voltai-build/src019/app/build/outputs/apk/release -name '*.apk' -print -quit)
+          test -n "$APK"
+          cp "$APK" voltai-build/VoltAI_0_19_USER_TEST_unsigned.apk
+          unzip -t voltai-build/VoltAI_0_19_USER_TEST_unsigned.apk >/dev/null
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          "$AAPT" dump badging voltai-build/VoltAI_0_19_USER_TEST_unsigned.apk | tee voltai-build/badging019.txt
+          grep -q "package: name='com.bateriaia.app' versionCode='47'" voltai-build/badging019.txt
+          test -f voltai-build/src019/app/build/outputs/mapping/release/mapping.txt
+          sha256sum voltai-build/VoltAI_0_19_USER_TEST_unsigned.apk > voltai-build/VoltAI_0_19_USER_TEST_unsigned.apk.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voltai-0-19-brand-icon-user-test
+          path: |
+            voltai-build/VoltAI_0_19_USER_TEST_unsigned.apk
+            voltai-build/VoltAI_0_19_USER_TEST_unsigned.apk.sha256
+            voltai-build/badging019.txt
+            voltai-build/src019/app/build/outputs/mapping/release/mapping.txt
+            /usr/local/lib/android/sdk/build-tools/36.0.0/zipalign
+            /usr/local/lib/android/sdk/build-tools/36.0.0/apksigner
+            /usr/local/lib/android/sdk/build-tools/36.0.0/lib/apksigner.jar
+          if-no-files-found: error
