@@ -1,0 +1,147 @@
+name: Build VoltAI 0.23 Rollback UI20 User Test
+
+on:
+  push:
+    branches:
+      - voltai-023-rollback-ui20
+    paths:
+      - 'voltai-build/volt20_*'
+      - '.github/workflows/voltai-023-rollback-ui20.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore exact VoltAI 0.20 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat voltai-build/volt20_* > voltai-build/VoltAI_0_20_source.b64
+          base64 -d voltai-build/VoltAI_0_20_source.b64 > voltai-build/VoltAI_0_20_source.tar.xz
+          echo "5446ff6a94917dfec3266b5030a7117b2beaa49594841825b10142d9135d7f46  voltai-build/VoltAI_0_20_source.tar.xz" | sha256sum -c -
+          mkdir -p voltai-build/src023
+          tar -xJf voltai-build/VoltAI_0_20_source.tar.xz -C voltai-build/src023
+
+      - name: Apply rollback-only version bump
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("voltai-build/src023")
+          g = root / "app/build.gradle"
+          s = g.read_text(encoding="utf-8")
+          s, n1 = re.subn(r'versionCode\s+48\b', 'versionCode 51', s, count=1)
+          s, n2 = re.subn(
+              r'versionName\s+["\']0\.20\.0-voltai-ui-polish-adaptive-user-test-universal["\']',
+              "versionName '0.23.0-voltai-rollback-ui20-user-test-universal'",
+              s,
+              count=1,
+          )
+          if n1 != 1 or n2 != 1:
+              raise SystemExit(f"version bump failed: code={n1}, name={n2}")
+          g.write_text(s, encoding="utf-8")
+
+          notes = root / "RELEASE_NOTES_VOLTAI_0_23_ROLLBACK.md"
+          notes.write_text("""# VoltAI 0.23 USER TEST — Rollback visual para a base 0.20
+
+          Esta build é uma reversão deliberada do layout posterior para a interface da VoltAI 0.20.
+
+          - Fonte funcional/visual: VoltAI 0.20 UI Polish / Adaptive Layout.
+          - Central MOVA restaurada para o desenho orbital circular.
+          - Gauge principal: 232dp e proporção 1:1.
+          - Espaçamentos da Home restaurados para a base 0.20.
+          - Cards orbitais, núcleo adaptativo, títulos ajustáveis e animação de 90 s restaurados.
+          - Nenhuma lógica da Central MOVA em cadeia da 0.22 é mantida.
+          - Package: com.bateriaia.app.
+          - versionCode: 51.
+          - versionName: 0.23.0-voltai-rollback-ui20-user-test-universal.
+          - Android 10+.
+          - A assinatura permanente deve ser aplicada após o CI com a mesma chave da linha VoltAI/Bateria IA.
+          """, encoding="utf-8")
+          PY
+
+      - name: Preflight exact UI20 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=voltai-build/src023
+          grep -q "versionCode 51" "$SRC/app/build.gradle"
+          grep -q "0.23.0-voltai-rollback-ui20-user-test-universal" "$SRC/app/build.gradle"
+          grep -q 'android:layout_marginTop="18dp"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'android:layout_width="232dp" android:layout_height="232dp"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'c.drawCircle(cx,cy,orbitR,p)' "$SRC/app/src/main/java/com/bateriaia/app/MovaDashboardView.java"
+          grep -q 'fittedLabel(c,title' "$SRC/app/src/main/java/com/bateriaia/app/MovaDashboardView.java"
+          grep -q 'setMeasuredDimension(size, size)' "$SRC/app/src/main/java/com/bateriaia/app/BatteryGaugeView.java"
+          grep -q '90000' "$SRC/app/src/main/java/com/bateriaia/app/MovaDashboardView.java"
+          ! grep -R "mova-chain-layout\|132dp" -n "$SRC/app/src/main" || exit 1
+          ! grep -R "~" -n "$SRC/app/src/main/java" "$SRC/app/src/main/res/layout" "$SRC/app/src/main/res/values"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build release APK
+        working-directory: voltai-build/src023
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Align, verify, and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          APK=$(find voltai-build/src023/app/build/outputs/apk/release -name '*.apk' -print -quit)
+          test -n "$APK"
+          ZIPALIGN="$ANDROID_HOME/build-tools/36.0.0/zipalign"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+
+          "$ZIPALIGN" -p -f 4 "$APK" out/VoltAI_0_23_ROLLBACK_UI20_aligned-unsigned.apk
+          "$ZIPALIGN" -c -v 4 out/VoltAI_0_23_ROLLBACK_UI20_aligned-unsigned.apk > out/ZIPALIGN_PRE_SIGN.txt
+          unzip -t out/VoltAI_0_23_ROLLBACK_UI20_aligned-unsigned.apk >/dev/null
+
+          "$AAPT" dump badging out/VoltAI_0_23_ROLLBACK_UI20_aligned-unsigned.apk | tee out/BADGING.txt
+          grep -q "package: name='com.bateriaia.app' versionCode='51'" out/BADGING.txt
+          grep -q "versionName='0.23.0-voltai-rollback-ui20-user-test-universal'" out/BADGING.txt
+          test -f voltai-build/src023/app/build/outputs/mapping/release/mapping.txt
+
+          cp voltai-build/src023/RELEASE_NOTES_VOLTAI_0_23_ROLLBACK.md out/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/
+
+          (
+            cd voltai-build/src023
+            zip -qr "$GITHUB_WORKSPACE/out/VoltAI_0_23_ROLLBACK_UI20_source.zip" \
+              app build.gradle settings.gradle gradle.properties RELEASE_NOTES_VOLTAI_0_23_ROLLBACK.md \
+              -x 'app/build/*' 'build/*' '.gradle/*'
+          )
+
+          sha256sum out/VoltAI_0_23_ROLLBACK_UI20_aligned-unsigned.apk > out/SHA256SUMS_UNSIGNED.txt
+          sha256sum out/VoltAI_0_23_ROLLBACK_UI20_source.zip >> out/SHA256SUMS_UNSIGNED.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voltai-0-23-rollback-ui20-unsigned
+          path: out/
+          if-no-files-found: error
