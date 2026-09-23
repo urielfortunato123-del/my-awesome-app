@@ -1,0 +1,155 @@
+name: Build VoltAI 0.24 UI2 Glass MOVA
+
+on:
+  push:
+    branches:
+      - voltai-024-ui2-glass-mova
+    paths:
+      - '.voltai024/**'
+      - '.github/workflows/voltai-024-ui2-glass-mova.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore exact VoltAI 0.20 stable engine baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat voltai-build/volt20_* > /tmp/volt20_source.b64
+          base64 -d /tmp/volt20_source.b64 > /tmp/volt20_source.tar.xz
+          echo "5446ff6a94917dfec3266b5030a7117b2beaa49594841825b10142d9135d7f46  /tmp/volt20_source.tar.xz" | sha256sum -c -
+          rm -rf voltai-build/src24
+          mkdir -p voltai-build/src24
+          tar -xJf /tmp/volt20_source.tar.xz -C voltai-build/src24
+
+      - name: Reconstruct and apply UI2 Glass MOVA patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .voltai024/patch.part* > /tmp/voltai024.patch.gz.b64
+          echo "45796eb44a81c56a137d3415ca7ef6e91c437bb0663c818a71996c0991c036e0  /tmp/voltai024.patch.gz.b64" | sha256sum -c -
+          base64 -d /tmp/voltai024.patch.gz.b64 > /tmp/voltai024.patch.gz
+          echo "dc19253a3536a8abf83cd19a7d42b7b3c9df26e30d0f60a6114b02aabddc8398  /tmp/voltai024.patch.gz" | sha256sum -c -
+          gunzip -c /tmp/voltai024.patch.gz > /tmp/voltai024.patch
+          echo "a7be151ab856e74ac77327f8459646fc1f7f2dbc7f2493abbd8f8eb69e3fbcf9  /tmp/voltai024.patch" | sha256sum -c -
+          cd voltai-build/src24
+          patch --batch -p1 < /tmp/voltai024.patch
+          rm -f app/src/main/java/com/bateriaia/app/MainActivity.java.bak
+          test -z "$(find . -name '*.rej' -print -quit)"
+
+      - name: UI2 and engine safety preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=voltai-build/src24
+          grep -q "versionCode 52" "$SRC/app/build.gradle"
+          grep -q "0.24.0-voltai-ui2-glass-mova-user-test" "$SRC/app/build.gradle"
+          grep -q 'layout="@layout/glass_home"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'layout="@layout/glass_mova"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'layout="@layout/glass_accuracy"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'android:layout_width="260dp"' "$SRC/app/src/main/res/layout/glass_mova.xml"
+          grep -q 'android:layout_height="260dp"' "$SRC/app/src/main/res/layout/glass_mova.xml"
+          grep -q 'glassHomeSupervisorTitle' "$SRC/app/src/main/res/layout/glass_home.xml"
+          grep -q 'glassMovaGauge' "$SRC/app/src/main/res/layout/glass_mova.xml"
+          grep -q 'glassAccuracyChart' "$SRC/app/src/main/res/layout/glass_accuracy.xml"
+          test -f "$SRC/app/src/main/java/com/bateriaia/app/PredictionAccuracyTracker.java"
+          test -f "$SRC/app/src/main/java/com/bateriaia/app/GlassAccuracyView.java"
+          grep -q 'predictionAccuracyTracker.observe' "$SRC/app/src/main/java/com/bateriaia/app/MainActivity.java"
+          grep -q 'showQuickChargePlan' "$SRC/app/src/main/java/com/bateriaia/app/MainActivity.java"
+          grep -q 'renderGlassUi' "$SRC/app/src/main/java/com/bateriaia/app/MainActivity.java"
+          # Existing core must remain present.
+          for f in BatteryAiEngine.java MovaMicroSupervisor.java EnergyPlanEngine.java DeviceActionAdvisor.java ThermalGuardian.java StandbyNeuralEco.java ActionImpactTracker.java; do
+            test -f "$SRC/app/src/main/java/com/bateriaia/app/$f"
+          done
+          ! grep -R "NotificationListenerService\|BIND_NOTIFICATION_LISTENER_SERVICE" "$SRC/app/src/main" "$SRC/app/src/main/AndroidManifest.xml" 2>/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root=Path("voltai-build/src24/app/src/main/res")
+          bad=[]
+          for p in root.rglob("*.xml"):
+              try: ET.parse(p)
+              except Exception as e: bad.append((str(p),str(e)))
+          if bad:
+              raise SystemExit("\n".join(f"{p}: {e}" for p,e in bad))
+          print("XML OK:", len(list(root.rglob("*.xml"))), "files")
+          PY
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build release APK with R8
+        working-directory: voltai-build/src24
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Align, inspect, and package release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          APK=$(find voltai-build/src24/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)
+          test -n "$APK"
+          ZIPALIGN="$ANDROID_HOME/build-tools/36.0.0/zipalign"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+
+          "$ZIPALIGN" -p -f 4 "$APK" out/VoltAI_0_24_UI2_GLASS_MOVA_aligned-unsigned.apk
+          "$ZIPALIGN" -c -v 4 out/VoltAI_0_24_UI2_GLASS_MOVA_aligned-unsigned.apk > out/ZIPALIGN_PRE_SIGN.txt
+          unzip -t out/VoltAI_0_24_UI2_GLASS_MOVA_aligned-unsigned.apk >/dev/null
+          "$AAPT" dump badging out/VoltAI_0_24_UI2_GLASS_MOVA_aligned-unsigned.apk | tee out/BADGING.txt
+          grep -q "package: name='com.bateriaia.app' versionCode='52'" out/BADGING.txt
+          grep -q "versionName='0.24.0-voltai-ui2-glass-mova-user-test'" out/BADGING.txt
+
+          test -f voltai-build/src24/app/build/outputs/mapping/release/mapping.txt
+          cp voltai-build/src24/app/build/outputs/mapping/release/mapping.txt out/MAPPING_R8.txt
+          cp voltai-build/src24/RELEASE_NOTES_VOLTAI_0_24.md out/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/
+
+          (
+            cd voltai-build/src24
+            zip -qr "$GITHUB_WORKSPACE/out/VoltAI_0_24_UI2_GLASS_MOVA_source.zip"               app build.gradle settings.gradle gradle.properties RELEASE_NOTES_VOLTAI_0_24.md               -x 'app/build/*' 'build/*' '.gradle/*' '*.bak'
+          )
+
+          sha256sum out/VoltAI_0_24_UI2_GLASS_MOVA_aligned-unsigned.apk > out/SHA256SUMS_UNSIGNED.txt
+          sha256sum out/VoltAI_0_24_UI2_GLASS_MOVA_source.zip >> out/SHA256SUMS_UNSIGNED.txt
+
+          cat > out/VoltAI_0_24_UI2_GLASS_MOVA_VERIFICACAO_PRE_ASSINATURA.txt <<'EOF'
+          VoltAI 0.24 UI2 — Glass MOVA
+          Build: VOLTAI-0.24-UI2-GLASS-MOVA
+          Package: com.bateriaia.app
+          versionCode: 52
+          versionName: 0.24.0-voltai-ui2-glass-mova-user-test
+          Base do motor: VoltAI 0.20 estável
+          UI: Glass MOVA, Home + Supervisor + Precisão da IA
+          Precisão: histórico previsto x real local, sem penalizar previsões atravessadas por recarga
+          Leitura: linguagem simplificada; detalhes técnicos preservados em áreas secundárias
+          Status esperado nesta etapa: compilado/alinhado, ainda não assinado com a chave permanente
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voltai-0-24-ui2-glass-mova-unsigned
+          path: out/
+          if-no-files-found: error
