@@ -35,6 +35,17 @@ jobs:
         run: |
           set -euo pipefail
           cat .voltai024/patch.part* > /tmp/voltai024.patch.gz.b64
+          # Repair one transport-truncated base64 character in part00, then verify the exact canonical hash.
+          python3 - <<'PYFIX'
+          from pathlib import Path
+          p=Path("/tmp/voltai024.patch.gz.b64")
+          s=p.read_text()
+          old="rhTVv/TaWe"
+          new="rhTVVv/TaWe"
+          if s.count(old) != 1:
+              raise SystemExit(f"unexpected part00 repair count: {s.count(old)}")
+          p.write_text(s.replace(old,new,1))
+          PYFIX
           echo "45796eb44a81c56a137d3415ca7ef6e91c437bb0663c818a71996c0991c036e0  /tmp/voltai024.patch.gz.b64" | sha256sum -c -
           base64 -d /tmp/voltai024.patch.gz.b64 > /tmp/voltai024.patch.gz
           echo "dc19253a3536a8abf83cd19a7d42b7b3c9df26e30d0f60a6114b02aabddc8398  /tmp/voltai024.patch.gz" | sha256sum -c -
