@@ -1,0 +1,168 @@
+name: Build VoltAI 0.25 UI2 Glass Modern Nav
+
+on:
+  push:
+    branches:
+      - voltai-025-ui2-glass-modern-nav
+    paths:
+      - '.voltai024/**'
+      - '.github/scripts/voltai025_modern_nav.py'
+      - '.github/workflows/voltai-025-ui2-glass-modern-nav.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore exact VoltAI 0.20 stable engine baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat voltai-build/volt20_* > /tmp/volt20_source.b64
+          base64 -d /tmp/volt20_source.b64 > /tmp/volt20_source.tar.xz
+          echo "5446ff6a94917dfec3266b5030a7117b2beaa49594841825b10142d9135d7f46  /tmp/volt20_source.tar.xz" | sha256sum -c -
+          rm -rf voltai-build/src25
+          mkdir -p voltai-build/src25
+          tar -xJf /tmp/volt20_source.tar.xz -C voltai-build/src25
+
+      - name: Reconstruct exact VoltAI 0.24 UI2 Glass MOVA
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .voltai024/patch.part* > /tmp/voltai024.patch.gz.b64
+          python3 - <<'PYFIX'
+          from pathlib import Path
+          p=Path("/tmp/voltai024.patch.gz.b64")
+          s=p.read_text()
+          old="rhTVv/TaWe"
+          new="rhTVVv/TaWe"
+          if s.count(old) != 1:
+              raise SystemExit(f"unexpected part00 repair count: {s.count(old)}")
+          p.write_text(s.replace(old,new,1))
+          PYFIX
+          echo "45796eb44a81c56a137d3415ca7ef6e91c437bb0663c818a71996c0991c036e0  /tmp/voltai024.patch.gz.b64" | sha256sum -c -
+          base64 -d /tmp/voltai024.patch.gz.b64 > /tmp/voltai024.patch.gz
+          echo "dc19253a3536a8abf83cd19a7d42b7b3c9df26e30d0f60a6114b02aabddc8398  /tmp/voltai024.patch.gz" | sha256sum -c -
+          gunzip -c /tmp/voltai024.patch.gz > /tmp/voltai024.patch
+          echo "a7be151ab856e74ac77327f8459646fc1f7f2dbc7f2493abbd8f8eb69e3fbcf9  /tmp/voltai024.patch" | sha256sum -c -
+          cd voltai-build/src25
+          patch --batch -p1 < /tmp/voltai024.patch
+          rm -f app/src/main/java/com/bateriaia/app/MainActivity.java.bak
+          test -z "$(find . -name '*.rej' -print -quit)"
+
+      - name: Apply VoltAI 0.25 modern vector navigation
+        run: python3 .github/scripts/voltai025_modern_nav.py
+
+      - name: UI2 and engine safety preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=voltai-build/src25
+          grep -q "versionCode 53" "$SRC/app/build.gradle"
+          grep -q "0.25.0-voltai-ui2-glass-modern-nav-user-test" "$SRC/app/build.gradle"
+          grep -q 'layout="@layout/glass_home"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'layout="@layout/glass_mova"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'layout="@layout/glass_accuracy"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'drawableTop="@drawable/ic_nav_home_modern"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'drawableTop="@drawable/ic_nav_stats_modern"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'drawableTop="@drawable/ic_nav_mova_modern"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'drawableTop="@drawable/ic_nav_history_modern"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'drawableTop="@drawable/ic_nav_more_modern"' "$SRC/app/src/main/res/layout/activity_main.xml"
+          grep -q 'setCompoundDrawableTintList' "$SRC/app/src/main/java/com/bateriaia/app/MainActivity.java"
+          grep -q 'predictionAccuracyTracker.observe' "$SRC/app/src/main/java/com/bateriaia/app/MainActivity.java"
+          grep -q 'showQuickChargePlan' "$SRC/app/src/main/java/com/bateriaia/app/MainActivity.java"
+          grep -q 'renderGlassUi' "$SRC/app/src/main/java/com/bateriaia/app/MainActivity.java"
+          for f in BatteryAiEngine.java MovaMicroSupervisor.java EnergyPlanEngine.java DeviceActionAdvisor.java ThermalGuardian.java StandbyNeuralEco.java ActionImpactTracker.java; do
+            test -f "$SRC/app/src/main/java/com/bateriaia/app/$f"
+          done
+          ! grep -R "NotificationListenerService\|BIND_NOTIFICATION_LISTENER_SERVICE" "$SRC/app/src/main" "$SRC/app/src/main/AndroidManifest.xml" 2>/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root=Path("voltai-build/src25/app/src/main/res")
+          bad=[]
+          for p in root.rglob("*.xml"):
+              try: ET.parse(p)
+              except Exception as e: bad.append((str(p),str(e)))
+          if bad:
+              raise SystemExit("\n".join(f"{p}: {e}" for p,e in bad))
+          print("XML OK:", len(list(root.rglob("*.xml"))), "files")
+          PY
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build release APK with R8
+        working-directory: voltai-build/src25
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Align, inspect, and package release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          APK=$(find voltai-build/src25/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)
+          test -n "$APK"
+          ZIPALIGN="$ANDROID_HOME/build-tools/36.0.0/zipalign"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+
+          "$ZIPALIGN" -p -f 4 "$APK" out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_aligned-unsigned.apk
+          "$ZIPALIGN" -c -v 4 out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_aligned-unsigned.apk > out/ZIPALIGN_PRE_SIGN.txt
+          unzip -t out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_aligned-unsigned.apk >/dev/null
+          "$AAPT" dump badging out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_aligned-unsigned.apk | tee out/BADGING.txt
+          grep -q "package: name='com.bateriaia.app' versionCode='53'" out/BADGING.txt
+          grep -q "versionName='0.25.0-voltai-ui2-glass-modern-nav-user-test'" out/BADGING.txt
+
+          test -f voltai-build/src25/app/build/outputs/mapping/release/mapping.txt
+          cp voltai-build/src25/app/build/outputs/mapping/release/mapping.txt out/MAPPING_R8.txt
+          cp voltai-build/src25/RELEASE_NOTES_VOLTAI_0_25.md out/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/
+
+          (
+            cd voltai-build/src25
+            zip -qr "$GITHUB_WORKSPACE/out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_source.zip"               app build.gradle settings.gradle gradle.properties RELEASE_NOTES_VOLTAI_0_25.md               -x 'app/build/*' 'build/*' '.gradle/*' '*.bak'
+          )
+
+          sha256sum out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_aligned-unsigned.apk > out/SHA256SUMS_UNSIGNED.txt
+          sha256sum out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_source.zip >> out/SHA256SUMS_UNSIGNED.txt
+
+          cat > out/VoltAI_0_25_UI2_GLASS_MODERN_NAV_VERIFICACAO_PRE_ASSINATURA.txt <<'EOF'
+          VoltAI 0.25 UI2 — Glass Modern Nav
+          Build: VOLTAI-0.25-UI2-GLASS-MODERN-NAV
+          Package: com.bateriaia.app
+          versionCode: 53
+          versionName: 0.25.0-voltai-ui2-glass-modern-nav-user-test
+          Base: VoltAI 0.24 UI2 Glass MOVA
+          Mudança principal: barra inferior modernizada com ícones vetoriais nativos
+          Abas preservadas: Início, Estatísticas, MOVA, Histórico, Mais
+          MOVA: mantém destaque central/elevado da UI2
+          Motor, previsões, histórico, precisão e lógica MOVA: preservados da 0.24
+          Status esperado nesta etapa: compilado/alinhado, ainda não assinado com a chave permanente
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voltai-0-25-ui2-glass-modern-nav-unsigned
+          path: out/
+          if-no-files-found: error
